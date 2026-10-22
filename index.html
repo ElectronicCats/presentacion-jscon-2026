@@ -1,0 +1,718 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>LoRa · Bluetooth · USB · Meshtastic</title>
+<style>
+:root{--bg:#050508;--panel:#0b0f14;--green:#39FF14;--magenta:#FF00E5;--cyan:#00FFF7;--yellow:#D4FF00;--orange:#FF6B00;--amber:#FFA51F;--dim:#0f3d1e;--text:#b8ffd0}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%;overflow:hidden}
+body{background:var(--bg);color:var(--text);font-family:"JetBrains Mono","Fira Code",Consolas,monospace}
+#deck{display:flex;height:100vh;width:100vw;transition:transform .5s cubic-bezier(.4,0,.2,1)}
+.slide{width:100vw;height:100vh;flex:0 0 100vw;display:flex;flex-direction:column;justify-content:center;padding:80px 9vw 100px;position:relative;opacity:.25;transition:opacity .4s;overflow:hidden}
+.slide.active{opacity:1}
+.slide>*{width:100%;max-width:100%}
+.slide::before{content:"";position:absolute;inset:0;background-image:linear-gradient(rgba(57,255,20,.03) 1px,transparent 1px),linear-gradient(90deg,rgba(57,255,20,.03) 1px,transparent 1px);background-size:40px 40px;pointer-events:none}
+.kicker{font-size:12px;letter-spacing:4px;text-transform:uppercase;color:var(--cyan);margin-bottom:14px;text-shadow:0 0 10px rgba(0,255,247,.6)}
+h1{font-size:clamp(34px,5vw,64px);color:var(--green);letter-spacing:2px;line-height:1.1;text-shadow:0 0 24px rgba(57,255,20,.5);margin-bottom:18px}
+h2{font-size:clamp(24px,3vw,40px);color:var(--green);letter-spacing:1px;line-height:1.15;text-shadow:0 0 18px rgba(57,255,20,.45);margin-bottom:20px}
+h3{font-size:15px;color:var(--yellow);letter-spacing:1px;text-transform:uppercase;margin:20px 0 8px}
+p,li{font-size:clamp(13px,1.25vw,16px);line-height:1.75}
+p{margin-bottom:12px}
+ul{list-style:none;margin:8px 0 12px}
+li{padding-left:22px;position:relative;margin-bottom:7px}
+li::before{content:"▸";position:absolute;left:0;color:var(--magenta)}
+b,strong{color:var(--yellow);font-weight:600}
+.g{color:var(--green)}.m{color:var(--magenta)}.c{color:var(--cyan)}.o{color:var(--orange)}
+.tag{display:inline-block;padding:3px 10px;border:1px solid var(--dim);border-radius:4px;font-size:11px;color:var(--cyan);background:rgba(0,255,247,.05);margin:2px 3px}
+.cols{display:grid;grid-template-columns:1fr 1fr;gap:34px;align-items:center;min-width:0}
+.cols>*{min-width:0}
+@media(max-width:900px){.cols{grid-template-columns:1fr}}
+.card{background:var(--panel);border:1px solid var(--dim);border-radius:10px;padding:20px 24px;box-shadow:0 0 24px rgba(57,255,20,.06),inset 0 0 40px rgba(0,0,0,.5);min-width:0;overflow:hidden}
+table{width:100%;border-collapse:collapse;margin-top:10px;table-layout:auto}
+th{color:var(--cyan);font-size:11px;text-transform:uppercase;letter-spacing:1px;padding:8px 10px;text-align:left;border-bottom:1px solid var(--dim)}
+td{padding:7px 10px;font-size:13px;border-bottom:1px dashed rgba(15,61,30,.6)}
+tr:hover td{background:rgba(57,255,20,.05)}
+svg{max-width:100%;height:auto;display:block}
+.slide-num{position:absolute;top:26px;right:40px;font-size:12px;color:#3f7a58;letter-spacing:2px;transition:opacity .45s,transform .45s}
+.brand{position:absolute;bottom:24px;left:40px;font-size:11px;color:#2c5a40;letter-spacing:3px;text-transform:uppercase;transition:opacity .45s,transform .45s}
+#nav{position:fixed;bottom:0;left:0;right:0;display:flex;align-items:center;justify-content:space-between;padding:12px 20px;background:linear-gradient(transparent,rgba(5,5,8,.92) 40%);z-index:100;pointer-events:none;transition:transform .45s cubic-bezier(.4,0,.2,1),opacity .45s}
+#nav>*{pointer-events:auto}
+body.fs #nav{transform:translateY(110%);opacity:0;pointer-events:none}
+body.fs .slide-num{opacity:0;transform:translateY(-12px);pointer-events:none}
+body.fs .brand{opacity:0;transform:translateY(12px);pointer-events:none}
+.nbtn{background:var(--panel);border:1px solid var(--green);color:var(--green);font-family:inherit;font-size:13px;padding:9px 18px;border-radius:6px;cursor:pointer;letter-spacing:1px;transition:all .15s;text-shadow:0 0 8px rgba(57,255,20,.6)}
+.nbtn:hover{background:rgba(57,255,20,.12);box-shadow:0 0 16px rgba(57,255,20,.4)}
+.nbtn:disabled{opacity:.25;cursor:default;box-shadow:none}
+#counter{font-size:13px;color:var(--cyan);letter-spacing:2px}
+#dots{display:flex;gap:7px}
+.dot{width:8px;height:8px;border-radius:50%;background:#123322;border:1px solid var(--dim);cursor:pointer;transition:all .2s}
+.dot.on{background:var(--green);box-shadow:0 0 10px var(--green);border-color:var(--green)}
+#progress{position:fixed;top:0;left:0;height:3px;z-index:101;background:linear-gradient(90deg,var(--green),var(--cyan),var(--magenta));box-shadow:0 0 12px rgba(57,255,20,.7);transition:width .3s}
+.blink{animation:blink 1.1s steps(2) infinite;color:var(--magenta)}
+@keyframes blink{50%{opacity:0}}
+
+/* ---------- SLIDE DE TÍTULO ---------- */
+.title-slide{padding:0;align-items:center;justify-content:center}
+.grid-bg{position:absolute;inset:0;background-image:linear-gradient(rgba(57,255,20,.04) 1px,transparent 1px),linear-gradient(90deg,rgba(57,255,20,.04) 1px,transparent 1px);background-size:40px 40px;pointer-events:none}
+.title-wrap{position:relative;z-index:2;display:flex;flex-direction:column;align-items:center;gap:30px}
+.title-frame{text-align:center;padding:46px 78px;border:1px solid rgba(255,165,31,.35);border-radius:14px;background:rgba(11,15,20,.72);box-shadow:0 0 44px rgba(255,140,20,.12),inset 0 0 50px rgba(0,0,0,.55)}
+.event{font-size:clamp(42px,8vw,92px);color:var(--amber);letter-spacing:6px;line-height:1;text-shadow:0 0 30px rgba(255,165,31,.6),0 0 70px rgba(255,120,0,.35)}
+.byline{font-size:clamp(14px,1.5vw,19px);color:#7fdc9c;letter-spacing:2px;margin-top:20px}
+.byline .g{text-shadow:0 0 12px rgba(57,255,20,.55)}
+.rule{height:1px;margin:26px auto 22px;width:70%;background:linear-gradient(90deg,transparent,var(--green),transparent);opacity:.55}
+.presenter{font-size:clamp(15px,1.9vw,24px);color:var(--cyan);letter-spacing:3px;text-shadow:0 0 14px rgba(0,255,247,.5)}
+.hint{font-size:12px;color:#3f7a58;letter-spacing:2px}
+
+/* ---------- DIAPOSITIVA DEL ESQUEMÁTICO (a pantalla completa) ----------
+   Patrón de la skill schanim-embed: <section data-schanim="id"> + iframe.
+   La diapositiva no llevaTítulo ni botones: el esquemático ocupa toda la
+   pantalla y las teclas lo recorren (ver el bloque SchAnim del <script>). */
+.sa-slide{padding:0}
+.sa-slide .brand{display:none}
+#sa-badge{position:absolute;inset:0;width:100%;height:100%;border:0;display:block;background:var(--bg);z-index:1}
+/* Pantalla completa de verdad: mientras se recorre el esquemático, la barra
+   se retira igual que en el modo fullscreen, para no tapar el esquemático. */
+body.on-schematic #nav,body.on-schematic #progress{opacity:0;pointer-events:none;transform:translateY(110%)}
+body.on-schematic .slide-num{opacity:0}
+</style>
+</head>
+<body>
+<div id="progress"></div>
+<div id="deck">
+
+<section class="slide title-slide">
+<div class="grid-bg"></div>
+<div class="title-wrap">
+  <div class="title-frame">
+    <div class="event">JSCON 2026</div>
+    <div class="byline"><span class="g">Electronic Cats</span></div>
+    <div class="rule"></div>
+    <div class="presenter">Heikki Isa Perea Esparza</div>
+  </div>
+</div>
+</section>
+
+<section class="slide sa-slide" data-schanim="sa-badge">
+<div class="slide-num">02 / 19</div>
+<iframe id="sa-badge" src="assets/schanim/badge_jsc2026.player.html"
+        title="Esquemático animado del badge JSCON 2026"></iframe>
+</section>
+
+<section class="slide">
+<div class="slide-num">03 / 19</div>
+<div class="kicker">Contenido de la presentación</div>
+<h1>Del enlace de radio<br>a la red Meshtastic</h1>
+<div class="cols" style="margin-top:22px">
+  <div>
+    <h3 class="g">LoRa</h3>
+    <ul>
+      <li>Qué es y cómo funciona.</li>
+      <li>Modulación, protocolo y características.</li>
+      <li>Capacidades y parámetros principales.</li>
+    </ul>
+    <h3 class="c">Bluetooth y USB</h3>
+    <ul>
+      <li>Bluetooth como enlace local con el nodo.</li>
+      <li>USB como puerto serial virtual para comunicación y configuración.</li>
+    </ul>
+  </div>
+  <div>
+    <h3 class="m">Meshtastic</h3>
+    <ul>
+      <li>Tipos de nodos: clientes y routers.</li>
+      <li>Cómo participan y retransmiten mensajes.</li>
+      <li>Cómo se construye la red mesh.</li>
+      <li>Cómo se integran LoRa, Bluetooth y USB en la aplicación.</li>
+      <li>El badge como nodo conectado al celular por Bluetooth.</li>
+    </ul>
+  </div>
+</div>
+</section>
+
+<section class="slide">
+<div class="slide-num">04 / 19</div>
+<div class="kicker">¿Qué es LoRa?</div>
+<h2>LoRa — <span class="g">Long Range</span></h2>
+<div class="cols">
+<div>
+<p><b>LoRa</b> es una tecnología de comunicación inalámbrica cuya capa física utiliza modulación <b>Chirp Spread Spectrum (CSS)</b>, diseñada para enlaces de <b>largo alcance y bajo consumo</b>. Fue desarrollada originalmente por Cycleo, adquirida por Semtech en 2012.</p>
+<ul>
+<li>Ejemplos de bandas/planes regionales: <b class="c">EU868</b> · <b class="c">US915</b> · <b class="c">AS923</b> · variantes alrededor de <b class="c">433 MHz</b>.</li>
+<li>Utiliza la modulación <b class="m">Chirp Spread Spectrum (CSS)</b>, una implementación de Semtech.</li>
+<li>Semtech desarrolló la tecnología y fabrica transceptores LoRa; <b class="g">LoRaWAN</b> es uno de los protocolos de red que puede utilizarla.</li>
+</ul>
+</div>
+<div class="card">
+<h3>Por qué "Long Range"</h3>
+<svg viewBox="0 0 400 170">
+<g stroke="#0f3d1e" stroke-width="1"><line x1="0" y1="42" x2="400" y2="42"/><line x1="0" y1="85" x2="400" y2="85"/><line x1="0" y1="128" x2="400" y2="128"/></g>
+<g fill="none" stroke-width="2"><circle cx="200" cy="85" r="40" stroke="#39FF14" opacity=".9"/><circle cx="200" cy="85" r="72" stroke="#39FF14" opacity=".45"/><circle cx="200" cy="85" r="104" stroke="#39FF14" opacity=".2"/></g>
+<circle cx="200" cy="85" r="7" fill="#FF00E5"/>
+<text x="200" y="20" fill="#00FFF7" font-size="11" text-anchor="middle" font-family="monospace">alcance: depende del enlace</text>
+<text x="200" y="155" fill="#3f7a58" font-size="10" text-anchor="middle" font-family="monospace">antenas · obstáculos · ruido · potencia</text>
+</svg>
+</div>
+</div>
+<div class="brand">// qué es lora</div>
+</section>
+
+<section class="slide">
+<div class="slide-num">05 / 19</div>
+<div class="kicker">2 · ¿Cómo funciona LoRa?</div>
+<h2>Chirp Spread Spectrum <span class="m">(CSS)</span></h2>
+<div class="cols">
+<div class="card">
+<svg viewBox="0 0 420 210">
+<g stroke="#0f3d1e"><line x1="30" y1="105" x2="410" y2="105"/><line x1="30" y1="10" x2="30" y2="200"/></g>
+<polyline points="30,105 60,105 65,60 70,150 75,40 80,165 85,30 90,172 95,25 100,176 105,22 110,178 115,20 120,180 125,19 130,181 135,19 140,182 145,18 150,182 155,18 160,182 165,18 170,182 175,18 180,182 185,18 190,182 195,18 200,182 205,18 210,182 215,18 220,182 225,18 230,182 235,18 240,182 245,18 250,182 255,18 260,182 265,18 270,182 275,18 280,182 285,18 290,182 295,18 300,182 305,18 310,182 315,18 320,182 325,18 330,182 335,18 340,182 345,18 350,182 355,18 360,182 365,18 370,182 375,18 380,182 385,18 410,182" fill="none" stroke="#39FF14" stroke-width="1.6"/>
+<text x="30" y="15" fill="#D4FF00" font-size="10" font-family="monospace">f ↑</text>
+<text x="385" y="200" fill="#3f7a58" font-size="10" font-family="monospace">t →</text>
+<text x="200" y="205" fill="#FF00E5" font-size="11" text-anchor="middle" font-family="monospace">la FRECUENCIA CRECE linealmente durante el símbolo</text>
+</svg>
+</div>
+<div>
+<ul>
+<li>No hay portadora fija: se transmite un <b class="m">chirp</b> — una señal cuya frecuencia <b>barre todo el ancho de banda</b> en cada símbolo.</li>
+<li>Cada símbolo = el chirp base <b class="g">desplazado circularmente</b> un número de <b>chips</b> igual a su valor (0 … 2<sup>SF</sup>−1).</li>
+<li>El receptor hace <b class="c">dechirp</b>: multiplica por el chirp base conjugado → queda un <b class="c">tono puro</b> cuya frecuencia indica el símbolo.</li>
+<li>Una <b>FFT</b> revela el pico → símbolo decodificado, ¡incluso con SNR <b class="o">negativo</b>!</li>
+</ul>
+</div>
+</div>
+<div class="brand">// modulación css</div>
+</section>
+
+<section class="slide">
+<div class="slide-num">06 / 19</div>
+<div class="kicker">2 · Características LoRa — Protocolo</div>
+<h2>LoRaWAN: la capa de red</h2>
+<div class="cols">
+<div>
+<ul>
+<li><b class="g">LoRa</b> = capa física (modulación). <b class="c">LoRaWAN</b> = capa MAC / protocolo de red.</li>
+<li>Topología <b>estrella de estrellas</b>: nodos → gateways → servidor de red.</li>
+<li>Clases de dispositivo: <span class="tag">A</span><span class="tag">B</span><span class="tag">C</span></li>
+<li>Activación: <b>OTAA</b> (Over-The-Air) o <b>ABP</b> (por Activation).</li>
+<li><b class="m">ADR</b>: Adaptive Data Rate — el servidor optimiza SF/BW.</li>
+<li>Cifrado <b>AES-128</b> (red y aplicación).</li>
+</ul>
+</div>
+<div class="card">
+<svg viewBox="0 0 380 180">
+<g font-family="monospace" font-size="10" text-anchor="middle">
+<rect x="20" y="20" width="90" height="34" rx="5" fill="#0b0f14" stroke="#39FF14"/><text x="65" y="42" fill="#39FF14">NODO</text>
+<rect x="150" y="20" width="90" height="34" rx="5" fill="#0b0f14" stroke="#00FFF7"/><text x="195" y="42" fill="#00FFF7">GATEWAY</text>
+<rect x="270" y="20" width="90" height="34" rx="5" fill="#0b0f14" stroke="#FF00E5"/><text x="315" y="42" fill="#FF00E5">SERVIDOR</text>
+<line x1="110" y1="37" x2="148" y2="37" stroke="#39FF14" stroke-width="2"/>
+<line x1="240" y1="37" x2="268" y2="37" stroke="#00FFF7" stroke-width="2"/>
+<text x="129" y="28" fill="#3f7a58" font-size="8">LoRa</text>
+<text x="254" y="28" fill="#3f7a58" font-size="8">IP</text>
+<rect x="10" y="90" width="110" height="30" rx="4" fill="none" stroke="#0f3d1e" stroke-dasharray="3 3"/><text x="65" y="109" fill="#3f7a58" font-size="9">APP SERVER</text>
+<rect x="260" y="90" width="110" height="30" rx="4" fill="none" stroke="#0f3d1e" stroke-dasharray="3 3"/><text x="315" y="109" fill="#3f7a58" font-size="9">APP / DASHBOARD</text>
+<line x1="65" y1="56" x2="65" y2="88" stroke="#0f3d1e"/><line x1="315" y1="56" x2="315" y2="88" stroke="#0f3d1e"/>
+</g>
+</svg>
+<p style="font-size:11px;color:#3f7a58;margin-top:8px">El gateway recibe paquetes LoRa y los reenvía al servidor por una conexión IP; el servidor de red gestiona la red.</p>
+</div>
+</div>
+<div class="brand">// protocolo lorawan</div>
+</section>
+
+<section class="slide">
+<div class="slide-num">07 / 19</div>
+<div class="kicker">2 · Características LoRa — Capacidades</div>
+<h2>Lo que LoRa puede hacer</h2>
+<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:16px;margin-top:10px">
+<div class="card"><h3>Alcance</h3><p style="font-size:13px">Puede alcanzar varios kilómetros en condiciones favorables; el entorno, las antenas y la configuración determinan el resultado.</p></div>
+<div class="card"><h3>Consumo</h3><p style="font-size:13px">Puede lograr años de batería si transmite poco y duerme entre eventos; depende del diseño y del ciclo de trabajo.</p></div>
+<div class="card"><h3>Baja tasa</h3><p style="font-size:13px">Desde cientos de bit/s hasta decenas de kbit/s, según SF, BW y codificación. Ideal para mensajes cortos.</p></div>
+<div class="card"><h3>Robustez</h3><p style="font-size:13px">Con ciertas configuraciones puede demodular señales por debajo del nivel de ruido medido en el ancho de banda de referencia.</p></div>
+<div class="card"><h3>Propagación</h3><p style="font-size:13px">Las frecuencias sub-GHz pueden ofrecer ventajas en ciertos entornos, pero paredes y obstáculos también atenúan la señal.</p></div>
+<div class="card"><h3>Capacidad</h3><p style="font-size:13px">La cantidad de nodos útiles depende del tráfico, el tiempo en aire, los canales, las interferencias y las reglas regionales.</p></div>
+</div>
+<div class="brand">// capacidades</div>
+</section>
+
+<section class="slide">
+<div class="slide-num">08 / 19</div>
+<div class="kicker">2 · Características LoRa — Parámetros</div>
+<h2>SF · BW · CR — la palanca de LoRa</h2>
+<div class="cols">
+<div class="card">
+<table>
+<tr><th>SF</th><th>chips/símbolo</th><th>T símbolo @125 kHz</th><th>Tasa PHY teórica aprox.</th></tr>
+<tr><td class="g">7</td><td>128</td><td>1.02 ms</td><td>5468 bit/s</td></tr>
+<tr><td class="g">8</td><td>256</td><td>2.05 ms</td><td>3125 bit/s</td></tr>
+<tr><td class="g">9</td><td>512</td><td>4.10 ms</td><td>1758 bit/s</td></tr>
+<tr><td class="g">10</td><td>1024</td><td>8.19 ms</td><td>977 bit/s</td></tr>
+<tr><td class="g">11</td><td>2048</td><td>16.38 ms</td><td>537 bit/s</td></tr>
+<tr><td class="g">12</td><td>4096</td><td>32.77 ms</td><td>293 bit/s</td></tr>
+</table>
+</div>
+<div>
+<h3>Spreading Factor (SF 7–12)</h3>
+<p style="font-size:13px">SF determina 2<sup>SF</sup> valores posibles por símbolo. Un SF mayor suele mejorar la sensibilidad, pero reduce la tasa y aumenta el tiempo en aire.</p>
+<h3>Bandwidth (BW 125/250/500 kHz)</h3>
+<p style="font-size:13px">Ancho del chirp. Más BW = símbolos más rápidos, menor sensibilidad.</p>
+<h3>Coding Rate (CR 4/5 – 4/8)</h3>
+<p style="font-size:13px">FEC (corrección de errores). Más redundancia puede ayudar ante errores, pero aumenta el tiempo en aire; no garantiza más alcance.</p>
+<h3 class="c">Trade-off</h3>
+<p style="font-size:13px">SF alto suele aumentar sensibilidad y tiempo en aire, y reducir la tasa. El resultado real depende también de BW, ruido, antenas e interferencias.</p>
+</div>
+</div>
+<p style="font-size:10px;color:#3f7a58;margin-top:8px">Tabla orientativa para BW = 125 kHz y CR = 4/5; las tasas efectivas dependen también del encabezado, la carga útil y la configuración del radio. Verifica siempre el plan regional y la normativa local.</p>
+<div class="brand">// parámetros</div>
+</section>
+
+<section class="slide">
+<div class="slide-num">09 / 19</div>
+<div class="kicker">3 · Bluetooth</div>
+<h2>Bluetooth — el enlace de corto alcance</h2>
+<div class="cols">
+<div>
+<ul>
+<li>Tecnología inalámbrica de la <b class="c">banda ISM de 2.4 GHz</b>, estandarizada y mantenida por Bluetooth SIG.</li>
+<li>Usa salto de frecuencia para coexistir con otras señales. <b>Bluetooth Classic</b> utiliza 79 canales de 1 MHz; <b>BLE</b> utiliza 40 canales de 2 MHz.</li>
+<li>Clásico (BR/EDR) para audio y datos continuos.</li>
+<li><b class="g">BLE (Bluetooth Low Energy)</b>: el rey del bajo consumo — beacons, wearables, sensores.</li>
+<li>En Meshtastic: el celular se conecta al nodo por BLE como <b>interfaz</b>; el nodo aporta LoRa.</li>
+</ul>
+</div>
+<div class="card">
+<h3>BLE en una frase</h3>
+<svg viewBox="0 0 380 160">
+<g font-family="monospace" font-size="10" text-anchor="middle">
+<rect x="20" y="40" width="80" height="50" rx="8" fill="#0b0f14" stroke="#39FF14" stroke-width="2"/><text x="60" y="70" fill="#39FF14">CELULAR</text>
+<rect x="280" y="40" width="80" height="50" rx="8" fill="#0b0f14" stroke="#00FFF7" stroke-width="2"/><text x="320" y="70" fill="#00FFF7">BADGE</text>
+<path d="M110 55 Q 190 20 270 55" fill="none" stroke="#39FF14" stroke-width="2"/>
+<path d="M110 75 Q 190 140 270 75" fill="none" stroke="#00FFF7" stroke-width="2"/>
+<text x="190" y="30" fill="#39FF14">BLE GATT</text>
+<text x="190" y="135" fill="#00FFF7">app Meshtastic</text>
+</g>
+</svg>
+<p style="font-size:12px;color:#3f7a58;margin-top:8px">El teléfono manda/recibe por BLE; el badge convierte a LoRa.</p>
+</div>
+</div>
+<div class="brand">// bluetooth ble</div>
+</section>
+
+<section class="slide">
+<div class="slide-num">10 / 19</div>
+<div class="kicker">USB · Serial virtual</div>
+<h2>USB — Serial Virtual (CDC)</h2>
+<div class="cols">
+<div>
+<ul>
+<li>USB implementa la clase <b class="c">CDC-ACM</b> (Communications Device Class).</li>
+<li>El dispositivo aparece como un <b>puerto COM virtual</b> (ej. <span class="tag">COM3</span><span class="tag">/dev/ttyUSB0</span>).</li>
+<li>Puente <b>UART ↔ USB</b>: los bytes que entran por USB salen por el UART del MCU y viceversa.</li>
+<li>La velocidad (baud) es <b class="m">virtual</b> — el USB real no usa baudios, pero el MCU los presenta.</li>
+<li>En el badge: configuración WiFi, depuración, flasheado y puente serial con la app de escritorio.</li>
+</ul>
+</div>
+<div class="card">
+<h3>Flujo de datos</h3>
+<svg viewBox="0 0 380 150">
+<g font-family="monospace" font-size="10" text-anchor="middle">
+<rect x="15" y="30" width="80" height="44" rx="5" fill="#0b0f14" stroke="#00FFF7" stroke-width="2"/><text x="55" y="57" fill="#00FFF7">PC / TTY</text>
+<rect x="150" y="30" width="90" height="44" rx="5" fill="#0b0f14" stroke="#FF00E5" stroke-width="2"/><text x="195" y="57" fill="#FF00E5">USB CDC</text>
+<rect x="295" y="30" width="70" height="44" rx="5" fill="#0b0f14" stroke="#39FF14" stroke-width="2"/><text x="330" y="57" fill="#39FF14">MCU</text>
+<line x1="95" y1="52" x2="148" y2="52" stroke="#00FFF7" stroke-width="2"/>
+<line x1="240" y1="52" x2="293" y2="52" stroke="#FF00E5" stroke-width="2"/>
+<text x="195" y="110" fill="#3f7a58" font-size="10">bytes en crudo — el USB "no entiende" nada</text>
+</g>
+</svg>
+</div>
+</div>
+<div class="brand">// usb cdc</div>
+</section>
+
+<section class="slide">
+<div class="slide-num">11 / 19</div>
+<div class="kicker">¿Qué es Meshtastic?</div>
+<h2>Meshtastic — mensajería <span class="m">off-grid</span></h2>
+<div class="cols">
+<div>
+<p><b>Meshtastic</b> es un proyecto <b class="g">open-source</b> que utiliza radios LoRa para crear una <b class="m">red mesh de mensajería</b> que puede funcionar sin infraestructura celular ni acceso a internet. Un teléfono puede conectarse localmente al nodo por Bluetooth.</p>
+<ul>
+<li>Los nodos que tienen habilitada la retransmisión pueden reenviar paquetes → la red puede <b class="c">extender su cobertura</b>.</li>
+<li>Mensajes de texto, posición GPS, telemetría de sensores.</li>
+<li>Cifrado <b>AES-256</b> extremo a extremo.</li>
+<li>Ecosistema: firmware (ESP32, nRF52) + app (Android/iOS/Web).</li>
+</ul>
+</div>
+<div class="card">
+<h3>Ideal para</h3>
+<svg viewBox="0 0 380 160">
+<g font-family="monospace" font-size="10" text-anchor="middle">
+<circle cx="80" cy="55" r="26" fill="none" stroke="#39FF14" stroke-width="2"/><text x="80" y="50" fill="#39FF14">⛺</text><text x="80" y="68" fill="#3f7a58" font-size="8">CAMPING</text>
+<circle cx="190" cy="55" r="26" fill="none" stroke="#FF00E5" stroke-width="2"/><text x="190" y="50" fill="#FF00E5">🏙</text><text x="190" y="68" fill="#3f7a58" font-size="8">URBANO</text>
+<circle cx="300" cy="55" r="26" fill="none" stroke="#00FFF7" stroke-width="2"/><text x="300" y="50" fill="#00FFF7">🆘</text><text x="300" y="68" fill="#3f7a58" font-size="8">EMERGENCIA</text>
+<text x="190" y="125" fill="#D4FF00" font-size="11">comunicación donde no hay cobertura</text>
+</g>
+</svg>
+</div>
+</div>
+<div class="brand">// meshtastic</div>
+</section>
+
+<section class="slide">
+<div class="slide-num">12 / 19</div>
+<div class="kicker">Meshtastic — Tipos de nodos</div>
+<h2>Cliente <span class="c">·</span> Router <span class="m">·</span> (y híbridos)</h2>
+<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:16px;margin-top:8px">
+<div class="card"><h3 class="c">CLIENTE</h3><p style="font-size:13px">Es un rol de nodo, no la app del celular. La retransmisión depende del rol y de la configuración del firmware; la app se conecta al nodo por Bluetooth, USB o Wi-Fi, según el equipo.</p></div>
+<div class="card"><h3 class="m">ROUTER / REPETIDOR</h3><p style="font-size:13px">Nodo configurado para priorizar el reenvío de paquetes. Puede ampliar la cobertura; requiere buena ubicación y una configuración adecuada.</p></div>
+<div class="card"><h3 class="g">CLIENT_MUTE / OTROS ROLES</h3><p style="font-size:13px">CLIENT_MUTE evita retransmitir paquetes de otros nodos. Un mismo dispositivo puede ofrecer interfaz de usuario y radio; su comportamiento de reenvío depende del rol configurado.</p></div>
+</div>
+<div class="brand">// tipos de nodo</div>
+</section>
+
+<section class="slide">
+<div class="slide-num">13 / 19</div>
+<div class="kicker">Meshtastic — Participación en la red</div>
+<h2>Cada rol juega distinto</h2>
+<div class="cols">
+<div class="card">
+<svg viewBox="0 0 400 200">
+<g font-family="monospace" font-size="9" text-anchor="middle">
+<circle cx="60" cy="40" r="14" fill="#0b0f14" stroke="#00FFF7" stroke-width="2"/><text x="60" y="44" fill="#00FFF7">CL</text>
+<circle cx="60" cy="100" r="14" fill="#0b0f14" stroke="#FF00E5" stroke-width="2"/><text x="60" y="104" fill="#FF00E5">RT</text>
+<circle cx="60" cy="160" r="14" fill="#0b0f14" stroke="#39FF14" stroke-width="2"/><text x="60" y="164" fill="#39FF14">BDG</text>
+<path d="M74 40 Q 140 40 180 80" stroke="#00FFF7" fill="none" stroke-width="1.5"/>
+<path d="M74 160 Q 140 160 180 120" stroke="#39FF14" fill="none" stroke-width="1.5"/>
+<circle cx="200" cy="100" r="20" fill="#0b0f14" stroke="#FF00E5" stroke-width="2.5"/><text x="200" y="104" fill="#FF00E5">RT</text>
+<path d="M220 100 Q 280 100 320 100" stroke="#FF00E5" stroke-width="1.5"/>
+<circle cx="340" cy="100" r="14" fill="#0b0f14" stroke="#39FF14" stroke-width="2"/><text x="340" y="104" fill="#39FF14">BDG</text>
+<text x="200" y="25" fill="#3f7a58" font-size="9">cliente → router → badge</text>
+</g>
+</svg>
+</div>
+<div>
+<h3 class="c">Cliente</h3>
+<p style="font-size:13px">El rol y la configuración determinan si el nodo reenvía paquetes. No debe confundirse el nodo cliente con la app del teléfono.</p>
+<h3 class="m">Router</h3>
+<p style="font-size:13px">Puede reenviar paquetes recibidos si su rol lo permite y el <b>hop limit</b> no se agotó.</p>
+<h3 class="g">Badge (según configuración)</h3>
+<p style="font-size:13px">El badge sirve como interfaz para el usuario y como nodo de radio; su comportamiento de retransmisión depende del rol configurado en el firmware.</p>
+</div>
+</div>
+<div class="brand">// participación</div>
+</section>
+
+<section class="slide">
+<div class="slide-num">14 / 19</div>
+<div class="kicker">Meshtastic — Construcción de la red mesh</div>
+<h2>La malla se construye <span class="g">sola</span>, salto a salto</h2>
+<div class="cols">
+<div class="card">
+<svg viewBox="0 0 400 210">
+<g stroke="#1a5a35" stroke-width="1.2" opacity=".7">
+<line x1="70" y1="50" x2="200" y2="40"/><line x1="70" y1="50" x2="150" y2="150"/>
+<line x1="200" y1="40" x2="330" y2="60"/><line x1="200" y1="40" x2="280" y2="140"/>
+<line x1="150" y1="150" x2="280" y2="140"/><line x1="330" y1="60" x2="280" y2="140"/>
+<line x1="70" y1="50" x2="280" y2="140" opacity=".4"/>
+</g>
+<g font-family="monospace" font-size="9" text-anchor="middle">
+<circle cx="70" cy="50" r="13" fill="#0b0f14" stroke="#39FF14" stroke-width="2"/><text x="70" y="54" fill="#39FF14">A</text>
+<circle cx="200" cy="40" r="13" fill="#0b0f14" stroke="#FF00E5" stroke-width="2"/><text x="200" y="44" fill="#FF00E5">B</text>
+<circle cx="330" cy="60" r="13" fill="#0b0f14" stroke="#39FF14" stroke-width="2"/><text x="330" y="64" fill="#39FF14">C</text>
+<circle cx="150" cy="150" r="13" fill="#0b0f14" stroke="#FF00E5" stroke-width="2"/><text x="150" y="154" fill="#FF00E5">D</text>
+<circle cx="280" cy="140" r="13" fill="#0b0f14" stroke="#39FF14" stroke-width="2"/><text x="280" y="144" fill="#39FF14">E</text>
+</g>
+<text x="200" y="200" fill="#3f7a58" font-size="9" text-anchor="middle" font-family="monospace">reenvío controlado por flooding y límite de saltos</text>
+</svg>
+</div>
+<div>
+<ul>
+<li><b class="m">Flooding controlado</b>: los paquetes tienen un <b>hop limit</b>. Cada retransmisión consume parte de ese límite y evita una propagación indefinida; el valor depende de la configuración.</li>
+<li>Los mensajes de <b class="c">NodeInfo</b> anuncian información de los nodos; no equivalen a un mapa completo y preciso de la topología.</li>
+<li><b>Traceroute</b>: función de diagnóstico que permite investigar la ruta seguida por determinados paquetes.</li>
+<li>El reenvío se basa en paquetes y límites de saltos, no en una tabla de rutas tradicional; los cambios de nodos pueden afectar qué caminos funcionan.</li>
+<li>Más routers bien colocados pueden ampliar el alcance, pero no garantizan mayor rendimiento ni conectividad en todos los puntos.</li>
+</ul>
+</div>
+</div>
+<div class="brand">// mesh</div>
+</section>
+
+<section class="slide">
+<div class="slide-num">15 / 19</div>
+<div class="kicker">Meshtastic — Tecnologías involucradas</div>
+<h2>Hardware <span class="m">+</span> Software <span class="c">+</span> Radio</h2>
+<div class="card" style="max-width:900px;margin:0 auto">
+<svg viewBox="0 0 700 300">
+<g font-family="monospace" font-size="10" text-anchor="middle">
+<rect x="250" y="20" width="200" height="46" rx="6" fill="#0b0f14" stroke="#39FF14" stroke-width="2.5"/><text x="350" y="48" fill="#39FF14" font-size="12">MCU ESP32 / nRF52</text>
+<rect x="30" y="120" width="150" height="46" rx="6" fill="#0b0f14" stroke="#FF00E5" stroke-width="2"/><text x="105" y="148" fill="#FF00E5">LoRa radio</text>
+<rect x="200" y="120" width="150" height="46" rx="6" fill="#0b0f14" stroke="#00FFF7" stroke-width="2"/><text x="275" y="148" fill="#00FFF7">BLE 5.0</text>
+<rect x="370" y="120" width="150" height="46" rx="6" fill="#0b0f14" stroke="#D4FF00" stroke-width="2"/><text x="445" y="148" fill="#D4FF00">USB CDC</text>
+<rect x="540" y="120" width="140" height="46" rx="6" fill="#0b0f14" stroke="#FF6B00" stroke-width="2"/><text x="610" y="148" fill="#FF6B00">GPS / Sensores</text>
+<line x1="350" y1="66" x2="105" y2="120" stroke="#0f3d1e" stroke-width="2"/>
+<line x1="350" y1="66" x2="275" y2="120" stroke="#0f3d1e" stroke-width="2"/>
+<line x1="350" y1="66" x2="445" y2="120" stroke="#0f3d1e" stroke-width="2"/>
+<line x1="350" y1="66" x2="610" y2="120" stroke="#0f3d1e" stroke-width="2"/>
+<rect x="30" y="210" width="330" height="50" rx="6" fill="#0b0f14" stroke="#39FF14" stroke-width="1.5" stroke-dasharray="4 3"/>
+<text x="195" y="232" fill="#39FF14">Firmware Meshtastic (C++ / PlatformIO)</text>
+<text x="195" y="248" fill="#3f7a58" font-size="9">radio interface · encryption · mesh routing · UI</text>
+<rect x="380" y="210" width="290" height="50" rx="6" fill="#0b0f14" stroke="#FF00E5" stroke-width="1.5" stroke-dasharray="4 3"/>
+<text x="525" y="232" fill="#FF00E5">App Meshtastic (Flutter)</text>
+<text x="525" y="248" fill="#3f7a58" font-size="9">mapa · chats · configuración de canal</text>
+</g>
+</svg>
+</div>
+<div class="brand">// tecnologías</div>
+</section>
+
+<section class="slide">
+<div class="slide-num">16 / 19</div>
+<div class="kicker">Meshtastic — Rol del Bluetooth</div>
+<h2>Bluetooth: la <span class="c">interfaz humana</span> del nodo</h2>
+<div class="cols">
+<div>
+<ul>
+<li>El celular corre la <b class="g">app Meshtastic</b> y se empareja al nodo por <b class="c">BLE</b>.</li>
+<li>Perfiles GATT: la app escribe / lee características → el nodo convierte a paquetes LoRa.</li>
+<li>Configuración de canal, claves, potencia y nodos: <b>todo se ajusta desde el teléfono</b>.</li>
+<li>Normalmente el celular es <b class="m">Cliente</b>: no retransmite, pero el nodo al que está conectado sí.</li>
+<li>Consume poco: BLE mantiene el enlace y solo transmite cuando hay datos.</li>
+</ul>
+</div>
+<div class="card">
+<h3>Esquema</h3>
+<svg viewBox="0 0 360 170">
+<g font-family="monospace" font-size="10" text-anchor="middle">
+<rect x="20" y="30" width="90" height="60" rx="8" fill="#0b0f14" stroke="#39FF14" stroke-width="2"/><text x="65" y="55" fill="#39FF14">CELULAR</text>
+<text x="65" y="72" fill="#3f7a58" font-size="8">app = Cliente</text>
+<rect x="250" y="30" width="90" height="60" rx="8" fill="#0b0f14" stroke="#FF00E5" stroke-width="2"/><text x="295" y="55" fill="#FF00E5">NODO LoRa</text>
+<text x="295" y="72" fill="#3f7a58" font-size="8">Router / Badge</text>
+<path d="M110 60 Q 180 60 248 60" stroke="#00FFF7" stroke-width="2.5" fill="none"/>
+<text x="180" y="50" fill="#00FFF7">BLE GATT</text>
+<text x="180" y="130" fill="#3f7a58" font-size="9">el celular manda → el nodo transmite por LoRa</text>
+</g>
+</svg>
+</div>
+</div>
+<div class="brand">// bluetooth role</div>
+</section>
+
+<section class="slide">
+<div class="slide-num">17 / 19</div>
+<div class="kicker">Meshtastic — Rol del LoRa</div>
+<h2>LoRa: la <span class="m">columna vertebral</span> de la mesh</h2>
+<div class="cols">
+<div>
+<ul>
+<li>Todo el tráfico de la red mesh viaja por <b class="m">LoRa</b>: mensajes, posición, telemetría.</li>
+<li><b class="c">Canales</b>: los ajustes regionales y del canal determinan la frecuencia y los parámetros de radio; la clave protege el contenido cifrado.</li>
+<li>Los nodos que desean comunicarse deben usar parámetros de radio compatibles y coincidir en el canal correspondiente.</li>
+<li>El reenvío controlado de paquetes permite que los nodos colaboren sin una infraestructura central; el canal de radio sigue siendo compartido.</li>
+<li>Modulación CSS: robustez ante interferencias y <b>largo alcance</b> por salto.</li>
+</ul>
+</div>
+<div class="card">
+<h3>Paquete LoRa en la malla</h3>
+<svg viewBox="0 0 380 170">
+<g font-family="monospace" font-size="9">
+<rect x="10" y="30" width="70" height="34" fill="#101c14" stroke="#39FF14"/><text x="45" y="51" fill="#39FF14" text-anchor="middle">FROM</text>
+<rect x="82" y="30" width="70" height="34" fill="#101c14" stroke="#39FF14"/><text x="117" y="51" fill="#39FF14" text-anchor="middle">TO</text>
+<rect x="154" y="30" width="60" height="34" fill="#101c14" stroke="#FF00E5"/><text x="184" y="51" fill="#FF00E5" text-anchor="middle">CHAN</text>
+<rect x="216" y="30" width="60" height="34" fill="#101c14" stroke="#FF00E5"/><text x="246" y="51" fill="#FF00E5" text-anchor="middle">HOPS</text>
+<rect x="278" y="30" width="92" height="34" fill="#101c14" stroke="#00FFF7"/><text x="324" y="51" fill="#00FFF7" text-anchor="middle">PAYLOAD</text>
+<rect x="10" y="76" width="360" height="30" fill="#0a0f14" stroke="#0f3d1e"/>
+<text x="20" y="95" fill="#D4FF00" font-size="9">cifrado AES-256 (canal + aplicación)</text>
+<text x="190" y="140" fill="#3f7a58" font-size="9" text-anchor="middle">retransmisión = flooding con hop limit decreciente</text>
+</g>
+</svg>
+</div>
+</div>
+<div class="brand">// lora role</div>
+</section>
+
+<section class="slide">
+<div class="slide-num">18 / 19</div>
+<div class="kicker">Meshtastic — LoRa en la red mesh</div>
+<h2>Del mensaje al chirp</h2>
+<div class="cols">
+<div>
+<ul>
+<li>La app prepara el mensaje y lo envía al nodo por BLE (o por otra interfaz admitida por el dispositivo).</li>
+<li>El firmware lo <b class="g">empaqueta</b> con metadatos de protocolo y aplica el cifrado del canal antes de transmitirlo.</li>
+<li>El radio LoRa transmite con la modulación CSS configurada (SF/BW).</li>
+<li>Los nodos intermedios procesan los metadatos necesarios y, si su rol lo permite y quedan saltos, <b class="c">retransmiten</b>; no todos descifran el contenido de la aplicación.</li>
+<li>El receptor destino lee el payload y lo sube por BLE a su app.</li>
+</ul>
+</div>
+<div class="card">
+<h3>Cadena de un salto</h3>
+<svg viewBox="0 0 380 180">
+<g font-family="monospace" font-size="9" text-anchor="middle">
+<rect x="10" y="20" width="80" height="30" fill="#0b0f14" stroke="#39FF14"/><text x="50" y="39" fill="#39FF14">APP (BLE)</text>
+<rect x="110" y="20" width="90" height="30" fill="#0b0f14" stroke="#FF00E5"/><text x="155" y="39" fill="#FF00E5">PAQUETE</text>
+<rect x="220" y="20" width="80" height="30" fill="#0b0f14" stroke="#00FFF7"/><text x="260" y="39" fill="#00FFF7">LoRa TX</text>
+<line x1="90" y1="35" x2="108" y2="35" stroke="#0f3d1e" stroke-width="2"/>
+<line x1="200" y1="35" x2="218" y2="35" stroke="#0f3d1e" stroke-width="2"/>
+<path d="M260 50 Q 260 90 260 110" stroke="#FF00E5" stroke-width="2" fill="none"/>
+<text x="275" y="85" fill="#FF00E5" font-size="9">aire</text>
+<rect x="220" y="110" width="80" height="30" fill="#0b0f14" stroke="#00FFF7"/><text x="260" y="129" fill="#00FFF7">LoRa RX</text>
+<rect x="110" y="110" width="90" height="30" fill="#0b0f14" stroke="#FF00E5"/><text x="155" y="129" fill="#FF00E5">DECIFRA</text>
+<rect x="10" y="110" width="80" height="30" fill="#0b0f14" stroke="#39FF14"/><text x="50" y="129" fill="#39FF14">APP (BLE)</text>
+<line x1="218" y1="125" x2="200" y2="125" stroke="#0f3d1e" stroke-width="2"/>
+<line x1="110" y1="125" x2="90" y2="125" stroke="#0f3d1e" stroke-width="2"/>
+</g>
+</svg>
+</div>
+</div>
+<div class="brand">// lora en mesh</div>
+</section>
+
+<section class="slide">
+<div class="slide-num">19 / 19</div>
+<div class="kicker">Resumen</div>
+<h2>El badge como nodo <span class="g">Meshtastic</span></h2>
+<div style="max-width:720px">
+<ul>
+<li><b class="g">LoRa</b> — capa física basada en Chirp Spread Spectrum: permite enlaces de largo alcance y bajo consumo con parámetros ajustables.</li>
+<li><b class="c">Bluetooth</b> — la interfaz: tu celular se conecta al badge para usar la red.</li>
+<li><b class="o">USB (Serial Virtual)</b> — configuración, depuración y puente de datos.</li>
+<li><b class="m">Meshtastic</b> — firmware y ecosistema que permiten crear una red mesh de mensajería sobre radios LoRa, sin depender de infraestructura celular o internet.</li>
+<li>El badge <b>brinda la comunicación LoRa</b> y, conectado por Bluetooth a los dispositivos cercanos, <b>todos somos nodos</b>.</li>
+</ul>
+<p style="margin-top:26px;color:#3f7a58;font-size:13px">◢ FIN — preguntas <span class="blink">▌</span></p>
+</div>
+<div class="brand">// gracias</div>
+</section>
+
+</div>
+
+<div id="nav">
+<button class="nbtn" id="bPrev">◀ ANTERIOR</button>
+<div id="dots"></div>
+<div id="counter">01 / 19</div>
+<button class="nbtn" id="bFull">⛶ FULLSCREEN</button>
+<button class="nbtn" id="bNext">SIGUIENTE ▶</button>
+</div>
+
+<script src="assets/schanim/schanim-host.js"></script>
+<script>
+"use strict";
+const slides=[...document.querySelectorAll(".slide")];
+const deck=document.getElementById("deck");
+const dotsEl=document.getElementById("dots");
+const counterEl=document.getElementById("counter");
+const progressEl=document.getElementById("progress");
+const bPrev=document.getElementById("bPrev");
+const bNext=document.getElementById("bNext");
+const bFull=document.getElementById("bFull");
+const total=slides.length;
+let current=0;
+
+slides.forEach((_,i)=>{const d=document.createElement("div");d.className="dot";d.onclick=()=>goTo(i);dotsEl.appendChild(d)});
+
+function goTo(i){
+  const prevIndex=current;
+  current=Math.max(0,Math.min(total-1,i));
+  deck.style.transform=`translateX(-${current*100}vw)`;
+  syncUI();
+  schanimSlideChanged(prevIndex,current);
+}
+
+function syncUI(){
+  slides.forEach((s,i)=>s.classList.toggle("active",i===current));
+  [...dotsEl.children].forEach((d,i)=>d.classList.toggle("on",i===current));
+  counterEl.textContent=String(current+1).padStart(2,"0")+" / "+total;
+  progressEl.style.width=(current/(total-1)*100)+"%";
+  bPrev.disabled=current===0;bNext.disabled=current===total-1;
+  // Mientras se recorre el esquemático, la barra se retira para dejarlo a pantalla completa.
+  document.body.classList.toggle("on-schematic",!!(slides[current].dataset||{}).schanim);
+}
+
+let touchStartX=0;
+deck.addEventListener("touchstart",e=>{touchStartX=e.touches[0].clientX},{passive:true});
+deck.addEventListener("touchend",e=>{
+  const dx=e.changedTouches[0].clientX-touchStartX;
+  // next()/prev() y no goTo(): el gesto respeta la sincronización igual que las teclas.
+  if(Math.abs(dx)>60) dx<0 ? next() : prev();
+},{passive:true});
+
+// Los botones usan next()/prev() por la misma razón que las teclas: si la
+// diapositiva actual contiene un reproductor, avanzan la animación primero.
+bPrev.onclick=()=>prev();
+bNext.onclick=()=>next();
+bFull.onclick=()=>{if(!document.fullscreenElement)document.documentElement.requestFullscreen();else document.exitFullscreen()};
+
+document.addEventListener("fullscreenchange",()=>{document.body.classList.toggle("fs",!!document.fullscreenElement)});
+
+// ---------- SchAnim · la animación es parte del deck ----------
+// Patrón de la skill schanim-embed: un reproductor por <section data-schanim="…">.
+// Las teclas recorren primero los pasos del esquemático; cuando el reproductor se
+// queda sin pasos avisa con onEdge y entonces la presentación pasa de diapositiva.
+const players={};
+
+if(window.SchAnimHost){
+  document.querySelectorAll('[data-schanim]').forEach(section=>{
+    const id=section.dataset.schanim;
+    const frame=document.getElementById(id);
+    if(!frame) return;
+    players[id]=SchAnimHost.attach(frame,{
+      onEdge:dir=>dir==="next" ? deckNext() : deckPrev(),
+      // Al hacer clic dentro del esquema, el foco entra en el iframe y el documento
+      // deja de recibir las teclas. Un clic dentro no produce ningún evento en la
+      // página anfitriona, pero el reproductor sí avisa con 'state' cuando avanza.
+      // Aprovechamos ese aviso para devolverle el foco al documento: así flechas,
+      // botones y gestos se comportan siempre igual, y el clic ya lo había recibido
+      // el reproductor (que avanza un paso por su cuenta).
+      onState:()=>{ frame.blur(); window.focus(); }
+    });
+  });
+}else{
+  console.warn("schanim-host.js no se cargó: el esquemático solo responde con clic dentro del iframe.");
+}
+
+// El reproductor de la diapositiva actual, si esa diapositiva lo contiene.
+const currentPlayer=()=>{
+  const section=slides[current];
+  const id=section && section.dataset ? section.dataset.schanim : null;
+  return id ? players[id] : undefined;
+};
+
+function deckNext(){goTo(current+1)}
+function deckPrev(){goTo(current-1)}
+
+function next(){const p=currentPlayer();p ? p.next() : deckNext()}
+function prev(){const p=currentPlayer();p ? p.prev() : deckPrev()}
+
+// Al entrar en la diapositiva de la animación: desde atrás empieza al principio;
+// desde delante, al final (así se ven las últimas etapas al retroceder).
+function schanimSlideChanged(prevIndex,nextIndex){
+  const section=slides[nextIndex];
+  const id=section && section.dataset ? section.dataset.schanim : null;
+  if(!id || !players[id]) return;
+  const p=players[id];
+  (prevIndex < nextIndex ? p.first() : p.last());
+}
+
+document.addEventListener("keydown",e=>{
+  const fwd=e.key==="ArrowRight"||e.key===" "||e.key==="PageDown";
+  const back=e.key==="ArrowLeft"||e.key==="PageUp";
+
+  // Si el foco quedó dentro del iframe (el usuario hizo clic en el esquemático),
+  // el reproductor atiende las flechas y solo devuelve el control al llegar al
+  // borde. Escape es la salida directa y siempre está disponible.
+  if(e.key==="Escape"){
+    const p=currentPlayer();
+    if(p){ e.preventDefault(); deckPrev(); return; }
+  }
+
+  if(fwd){e.preventDefault();next()}
+  if(back){e.preventDefault();prev()}
+  if(e.key==="Home")goTo(0);
+  if(e.key==="End")goTo(total-1)
+});
+
+syncUI();
+</script>
+</body>
+</html>
