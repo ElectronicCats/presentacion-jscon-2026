@@ -1,0 +1,16 @@
+# Sistema operativo
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Editores
+.vscode/
+.idea/
+*.swp
+*~
+
+# Servidores locales y registros
+*.log
+
+# Dependencias (si en el futuro se añade una build)
+node_modules/
