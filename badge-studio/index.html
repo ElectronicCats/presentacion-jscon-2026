@@ -1,0 +1,703 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Badge Studio · JSConf MX 2026</title>
+<style>
+  :root {
+    --navy: #17334b;
+    --navy-deep: #0e2232;
+    --navy-line: #2a4d69;
+    --gold: #e8b33c;
+    --yellow: #f7df1e;
+    --text: #eef3f7;
+    --muted: #9db3c6;
+    --ok: #5fd39a;
+    --err: #ff7a7a;
+    --radius: 12px;
+    font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+    color-scheme: dark;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--navy-deep); color: var(--text); min-height: 100vh; }
+  header { display: flex; align-items: center; justify-content: space-between; gap: 16px;
+           padding: 18px 24px; border-bottom: 1px solid var(--navy-line); background: var(--navy); }
+  header h1 { margin: 0; font-size: 18px; font-weight: 650; letter-spacing: .2px; }
+  header h1 span { color: var(--yellow); }
+  .pill { font-size: 13px; padding: 5px 12px; border-radius: 999px; border: 1px solid var(--navy-line); color: var(--muted); white-space: nowrap; }
+  .pill.on { color: var(--ok); border-color: var(--ok); }
+  main { max-width: 1040px; margin: 0 auto; padding: 24px 16px 48px; }
+  .panel { display: grid; gap: 20px; grid-template-columns: minmax(0, 1fr) 320px; align-items: start; }
+  .panel[hidden] { display: none; }
+  .stack { display: grid; gap: 20px; min-width: 0; }
+  @media (max-width: 860px) { .panel { grid-template-columns: 1fr; } }
+  .head-right { display: flex; align-items: center; gap: 12px; }
+  .btn.inline { width: auto; margin: 0; padding: 7px 16px; }
+  .tabs { display: flex; gap: 4px; padding: 0 24px; background: var(--navy); border-bottom: 1px solid var(--navy-line); }
+  .tabs button { background: none; border: 0; border-bottom: 3px solid transparent; color: var(--muted); font: inherit;
+                 font-weight: 600; padding: 12px 18px; cursor: pointer; }
+  .tabs button:hover { color: var(--text); }
+  .tabs button[aria-selected=true] { color: var(--text); border-bottom-color: var(--yellow); }
+  .tabs button:focus-visible { outline: 2px solid var(--yellow); outline-offset: -2px; }
+  section { background: var(--navy); border: 1px solid var(--navy-line); border-radius: var(--radius); padding: 18px; }
+  h2 { margin: 0 0 14px; font-size: 13px; text-transform: uppercase; letter-spacing: 1.2px; color: var(--muted); font-weight: 600; }
+  .bezel { background: #05101a; border-radius: 16px; padding: 14px; border: 1px solid #000; box-shadow: inset 0 0 0 2px #1d3a52; }
+  #preview { display: block; width: 100%; aspect-ratio: 428 / 142; image-rendering: pixelated; background: #000; border-radius: 4px;
+             touch-action: none; outline: none; }
+  #preview.movable { cursor: grab; }
+  #preview.dragging { cursor: grabbing; }
+  #preview:focus-visible { box-shadow: 0 0 0 2px var(--yellow); }
+  .zoom { display: inline-flex; align-items: center; gap: 8px; color: var(--muted); }
+  .zoom input[type=range] { width: 140px; accent-color: var(--yellow); }
+  .zoom output { min-width: 3.2em; font-variant-numeric: tabular-nums; color: var(--text); }
+  .link { background: none; border: 0; color: var(--yellow); font: inherit; cursor: pointer; padding: 0; }
+  .link:disabled { color: var(--muted); opacity: .5; cursor: not-allowed; }
+  .drop { margin-top: 14px; border: 2px dashed var(--navy-line); border-radius: var(--radius); padding: 18px; text-align: center;
+          color: var(--muted); cursor: pointer; transition: border-color .15s, background .15s; }
+  .drop:hover, .drop.over { border-color: var(--yellow); background: rgba(247, 223, 30, .05); color: var(--text); }
+  .drop strong { color: var(--text); }
+  .controls { display: flex; flex-wrap: wrap; gap: 14px 22px; margin-top: 14px; align-items: center; font-size: 14px; }
+  .seg { display: inline-flex; border: 1px solid var(--navy-line); border-radius: 8px; overflow: hidden; }
+  .seg button { background: transparent; color: var(--muted); border: 0; padding: 7px 12px; font: inherit; cursor: pointer; }
+  .seg button.active { background: var(--navy-line); color: var(--text); }
+  .seg button:disabled { cursor: not-allowed; opacity: .5; }
+  label { display: inline-flex; align-items: center; gap: 8px; color: var(--muted); }
+  input[type=color] { width: 32px; height: 26px; border: 1px solid var(--navy-line); border-radius: 6px; background: none; padding: 0; }
+  .btn { width: 100%; padding: 11px 14px; border-radius: 10px; border: 1px solid var(--navy-line); background: var(--navy-deep);
+         color: var(--text); font: inherit; font-weight: 600; cursor: pointer; margin-top: 10px; }
+  .btn.primary { background: var(--yellow); color: #111; border-color: var(--yellow); }
+  .btn:disabled { opacity: .45; cursor: not-allowed; }
+  dl { display: grid; grid-template-columns: auto 1fr; gap: 6px 12px; margin: 0; font-size: 14px; }
+  dt { color: var(--muted); } dd { margin: 0; font-variant-numeric: tabular-nums; overflow-wrap: anywhere; }
+  .bar { height: 8px; border-radius: 99px; background: var(--navy-deep); overflow: hidden; margin-top: 16px; }
+  .bar > div { height: 100%; width: 0; background: linear-gradient(90deg, var(--gold), var(--yellow)); transition: width .1s; }
+  .stat { display: flex; justify-content: space-between; font-size: 13px; color: var(--muted); margin-top: 8px; font-variant-numeric: tabular-nums; }
+  .msg { font-size: 14px; margin-top: 12px; min-height: 1.3em; }
+  .msg.ok { color: var(--ok); } .msg.err { color: var(--err); }
+  details { margin-top: 20px; }
+  details summary { cursor: pointer; color: var(--muted); font-size: 13px; }
+  #log { margin-top: 10px; max-height: 220px; overflow: auto; font: 12px/1.5 ui-monospace, monospace; color: var(--muted); white-space: pre-wrap; }
+  .hint { font-size: 13px; color: var(--muted); line-height: 1.5; margin: 12px 0 0; }
+  .warn { display: none; border-color: var(--err); color: var(--err); margin-bottom: 20px; }
+
+  /* ---- Control e Inspector ---- */
+  .panel.one { grid-template-columns: minmax(0, 1fr); }
+  .field { display: grid; gap: 6px; color: var(--muted); font-size: 13px; margin-top: 4px; }
+  .field.grow { flex: 1 1 200px; } .field.short { width: 90px; }
+  input[type=text] { background: var(--navy-deep); border: 1px solid var(--navy-line); border-radius: 8px; color: var(--text);
+                     font: inherit; font-size: 15px; padding: 9px 12px; width: 100%; }
+  input[type=text]:focus { outline: 2px solid var(--yellow); outline-offset: 1px; border-color: transparent; }
+  input.mono, .mono { font-family: ui-monospace, "SFMono-Regular", Menlo, monospace; font-size: 13px; }
+  .row { display: flex; flex-wrap: wrap; gap: 10px; align-items: flex-end; margin-top: 10px; }
+  .row .btn { flex: 1 1 160px; margin-top: 0; width: auto; }
+  .check { display: flex; margin-top: 14px; font-size: 13px; }
+  code { font: 12px ui-monospace, Menlo, monospace; background: var(--navy-deep); padding: 1px 6px; border-radius: 4px; color: var(--text); }
+  .pad { display: grid; gap: 10px; grid-template-columns: repeat(4, 1fr); }
+  .shot { width: 100%; height: auto; display: block; image-rendering: pixelated; background: #000; border: 1px solid var(--line); border-radius: 8px; }
+  a.btn { text-decoration: none; display: inline-flex; align-items: center; justify-content: center; }
+  .padbtn { margin: 0; display: grid; gap: 4px; padding: 16px 8px; text-align: center; }
+  .padbtn b { font-size: 15px; letter-spacing: .4px; }
+  .padbtn small { font-weight: 400; color: var(--muted); font-size: 11px; font-family: ui-monospace, Menlo, monospace; }
+  .padbtn:not(:disabled):hover { border-color: var(--yellow); }
+  .padbtn.flash { background: var(--yellow); color: #111; } .padbtn.flash small { color: #333; }
+  @media (max-width: 560px) { .pad { grid-template-columns: repeat(2, 1fr); } }
+  .btn:focus-visible, .seg button:focus-visible { outline: 2px solid var(--yellow); outline-offset: 2px; }
+  .empty { margin: 0; color: var(--muted); font-size: 13px; line-height: 1.5; }
+  .inbox { display: grid; gap: 8px; max-height: 240px; overflow: auto; }
+  .inbox .item { border-left: 3px solid var(--gold); background: var(--navy-deep); border-radius: 6px; padding: 8px 12px; font-size: 14px; }
+  .inbox .item small { display: block; color: var(--muted); font-size: 12px; margin-bottom: 2px; }
+  .nodes table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  .nodes th { text-align: left; color: var(--muted); font-weight: 600; padding: 4px 6px; border-bottom: 1px solid var(--navy-line); }
+  .nodes td { padding: 6px; border-bottom: 1px solid rgba(42, 77, 105, .5); overflow-wrap: anywhere; }
+  .split { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.2fr); gap: 16px; margin-top: 14px; }
+  @media (max-width: 860px) { .split { grid-template-columns: 1fr; } }
+  .frames { max-height: 460px; overflow: auto; border: 1px solid var(--navy-line); border-radius: 8px; background: var(--navy-deep);
+            font: 12px/1.4 ui-monospace, Menlo, monospace; }
+  .frame { display: grid; grid-template-columns: 44px 66px 1fr 48px; gap: 8px; padding: 6px 10px; cursor: pointer; border-bottom: 1px solid rgba(42, 77, 105, .45); }
+  .frame:hover { background: rgba(255, 255, 255, .04); }
+  .frame[aria-selected=true] { background: rgba(247, 223, 30, .12); outline: 1px solid var(--yellow); outline-offset: -1px; }
+  .frame .dir { font-weight: 700; } .frame.tx .dir { color: var(--gold); } .frame.rx .dir { color: var(--ok); }
+  .frame .t { color: var(--muted); } .frame .n { color: var(--muted); text-align: right; }
+  .detail { border: 1px solid var(--navy-line); border-radius: 8px; padding: 12px; background: var(--navy-deep); max-height: 460px; overflow: auto; min-width: 0; }
+  .detail h3 { margin: 12px 0 6px; font-size: 12px; text-transform: uppercase; letter-spacing: 1px; color: var(--muted); }
+  .detail h3:first-child { margin-top: 0; }
+  .hex { font: 12px/1.6 ui-monospace, Menlo, monospace; word-break: break-all; }
+  .hex .hdr { color: var(--yellow); } .hex .len { color: var(--gold); }
+  .tree { font: 12px/1.6 ui-monospace, Menlo, monospace; }
+  .tree div { padding-left: 16px; } .tree > div { padding-left: 0; }
+  .tree .k { color: var(--yellow); } .tree .nm { color: var(--muted); } .tree .v { color: var(--text); } .tree .s { color: var(--ok); }
+</style>
+</head>
+<body>
+<header>
+  <h1>Badge Studio <span>JSConf MX 2026</span></h1>
+  <div class="head-right">
+    <span id="status" class="pill">Sin conectar</span>
+    <button id="connect" class="btn inline primary">Conectar por USB</button>
+  </div>
+</header>
+<nav class="tabs" role="tablist" aria-label="Secciones">
+  <button role="tab" id="t-imagen" aria-controls="p-imagen" aria-selected="true">Imagen</button>
+  <button role="tab" id="t-control" aria-controls="p-control" aria-selected="false">Control</button>
+  <button role="tab" id="t-inspector" aria-controls="p-inspector" aria-selected="false">Inspector</button>
+</nav>
+
+<main>
+  <section id="unsupported" class="warn">
+    Este navegador no soporta Web Serial. Usa Chrome o Edge de escritorio.
+  </section>
+
+  <div class="panel" id="p-imagen" role="tabpanel" aria-labelledby="t-imagen">
+  <section>
+    <h2>Imagen · 428 × 142</h2>
+    <div class="bezel"><canvas id="preview" width="428" height="142" tabindex="0"
+      aria-label="Vista previa. Arrastra para mover la imagen, rueda para zoom, flechas para ajustar."></canvas></div>
+    <div id="drop" class="drop" tabindex="0">
+      <strong>Arrastra una imagen</strong>, pégala o haz clic para elegirla
+      <input id="file" type="file" accept="image/*" hidden>
+    </div>
+    <div class="controls">
+      <div class="seg" role="group" aria-label="Encuadre rápido">
+        <button data-preset="real" class="active" disabled>Tamaño real</button>
+        <button data-preset="cover" disabled>Llenar panel</button>
+        <button data-preset="contain" disabled>Imagen completa</button>
+      </div>
+      <label>Fondo <input id="bg" type="color" value="#17334b"></label>
+      <label><input id="dither" type="checkbox" checked> Tramado (suaviza degradados)</label>
+      <span class="zoom">Zoom <input id="zoom" type="range" min="0" max="3" step="0.01" value="0" disabled>
+        <output id="zoomOut">100%</output></span>
+    </div>
+    <p class="hint">Solo se sube el recorte de 428 × 142 que ves arriba. La imagen empieza a tamaño real:
+      arrástrala dentro del recuadro para elegir el área; lo que quede sin imagen se rellena con el color de
+      Fondo. Rueda del ratón o deslizador para alejar / acercar, flechas para ajustar. La vista previa muestra exactamente los colores
+      RGB565 que pintará el panel.</p>
+  </section>
+
+  <section>
+    <h2>Badge</h2>
+    <dl>
+      <dt>Nodo</dt><dd id="node">—</dd>
+      <dt>Canvas</dt><dd id="current">—</dd>
+    </dl>
+    <button id="upload" class="btn primary" disabled>Subir imagen</button>
+    <button id="cancel" class="btn" hidden>Cancelar</button>
+    <div class="bar"><div id="progress"></div></div>
+    <div class="stat"><span id="pct">0%</span><span id="rate"></span></div>
+    <div id="msg" class="msg"></div>
+    <p class="hint">Al terminar, ve a la página <strong>Canvas</strong> del badge con los botones arriba / abajo.
+      Desde la pestaña <strong>Control</strong> puedes cambiar de página sin tocar el badge.</p>
+  </section>
+  </div>
+
+  <div class="panel" id="p-control" role="tabpanel" aria-labelledby="t-control" hidden>
+    <div class="stack">
+      <section>
+        <h2>Mensaje</h2>
+        <label class="field">Texto
+          <input id="c-text" type="text" maxlength="120" placeholder="Hola, JSConf" autocomplete="off">
+        </label>
+        <div class="row">
+          <button id="c-send-self" class="btn primary" data-needs-link>Mostrar en este badge</button>
+          <button id="c-send-mesh" class="btn" data-needs-link>Enviar a la malla (LoRa)</button>
+        </div>
+        <p class="hint">«Mostrar en este badge» manda un mensaje directo al propio nodo: aparece como aviso en la pantalla y no
+          sale por radio. «Enviar a la malla» lo transmite por LoRa a todos los nodos del canal; el canal usa la clave por
+          defecto, así que no es privado.</p>
+      </section>
+      <section>
+        <h2>Botones</h2>
+        <div class="pad" role="group" aria-label="Botones del badge">
+          <button class="btn padbtn up" data-press="UP" data-needs-link><b>ARRIBA</b><small>ALT_PRESS · 29</small></button>
+          <button class="btn padbtn sel" data-press="SELECT" data-needs-link><b>SELECT</b><small>SELECT · 10</small></button>
+          <button class="btn padbtn down" data-press="DOWN" data-needs-link><b>ABAJO</b><small>USER_PRESS · 28</small></button>
+          <button class="btn padbtn back" data-press="BACK" data-needs-link><b>BACK</b><small>CANCEL · 24</small></button>
+        </div>
+        <label class="check"><input id="c-keys" type="checkbox"> Atajos de teclado: ↑ ↓ Enter Esc</label>
+        <p class="hint">Cada botón envía un <code>send_input_event</code>: el badge reacciona igual que si lo pulsaras.
+          Arriba y abajo cambian de página.</p>
+      </section>
+      <section>
+        <h2>Pantalla del badge</h2>
+        <canvas id="c-shot" class="shot" width="428" height="142" aria-label="Captura de la pantalla del badge"></canvas>
+        <div class="row">
+          <button id="c-shot-btn" class="btn primary" data-needs-link>Capturar pantalla</button>
+          <a id="c-shot-save" class="btn" download="badge-pantalla.png" hidden>Guardar PNG</a>
+        </div>
+        <p class="hint">El badge guarda lo que acaba de pintar y la página lo descarga por XModem (~10 s). Pulsa
+          ARRIBA o ABAJO y captura de nuevo para ver cada página. Requiere el firmware con capturas.</p>
+      </section>
+      <section>
+        <h2>Nombre y reinicio</h2>
+        <div class="row">
+          <label class="field grow">Nombre largo <input id="c-long" type="text" maxlength="39" autocomplete="off"></label>
+          <label class="field short">Corto <input id="c-short" type="text" maxlength="4" autocomplete="off"></label>
+        </div>
+        <div class="row">
+          <button id="c-owner" class="btn primary" data-needs-link>Cambiar nombre</button>
+          <button id="c-reboot" class="btn" data-needs-link>Reiniciar badge</button>
+        </div>
+        <p class="hint">Cambiar el nombre <strong>reinicia el badge</strong>: el puerto USB deja de responder unos segundos y la
+          página se reconecta sola.</p>
+      </section>
+      <section>
+        <h2>Mensajes recibidos</h2>
+        <div id="c-inbox" class="inbox"><p class="empty">Aquí aparecen los textos que llegan al badge mientras estés conectado.</p></div>
+      </section>
+    </div>
+    <div class="stack">
+      <section>
+        <h2>Estado</h2>
+        <dl>
+          <dt>Nodo</dt><dd id="s-node">—</dd>
+          <dt>Nombre</dt><dd id="s-name">—</dd>
+          <dt>Firmware</dt><dd id="s-fw">—</dd>
+          <dt>Radio</dt><dd id="s-radio">—</dd>
+          <dt>Rol</dt><dd id="s-role">—</dd>
+          <dt>Bluetooth</dt><dd id="s-bt">—</dd>
+          <dt>Reinicios</dt><dd id="s-boot">—</dd>
+        </dl>
+        <button id="c-refresh" class="btn" data-needs-link>Actualizar</button>
+      </section>
+      <section>
+        <h2>Nodos cercanos</h2>
+        <div id="c-nodes" class="nodes"><p class="empty">—</p></div>
+      </section>
+    </div>
+  </div>
+
+  <div class="panel one" id="p-inspector" role="tabpanel" aria-labelledby="t-inspector" hidden>
+    <section>
+      <h2>Inspector de tramas</h2>
+      <div class="controls">
+        <label><input id="i-capture" type="checkbox" checked> Capturar</label>
+        <div class="seg" role="group" aria-label="Filtro">
+          <button data-filter="all" class="active">Todo</button>
+          <button data-filter="tx">Enviado</button>
+          <button data-filter="rx">Recibido</button>
+        </div>
+        <button id="i-clear" class="link">Limpiar</button>
+        <span id="i-count" class="hint"></span>
+      </div>
+      <div class="split">
+        <div id="i-list" class="frames" role="listbox" aria-label="Tramas capturadas"></div>
+        <div id="i-detail" class="detail"><p class="empty">Elige una trama para ver sus bytes y el árbol protobuf.</p></div>
+      </div>
+    </section>
+    <section>
+      <h2>Enviar un ToRadio en hexadecimal</h2>
+      <label class="field"><span>Mensaje <code>ToRadio</code> en bytes hexadecimales</span>
+        <input id="i-hex" type="text" class="mono" placeholder="1a 02 08 01" autocomplete="off" spellcheck="false">
+      </label>
+      <div class="row"><button id="i-send" class="btn" data-needs-link>Enviar</button></div>
+      <p class="hint">Sin cabecera: la trama <code>94 c3 LEN</code> se agrega sola. Para experimentar, elige una trama enviada
+        y usa «Editar y reenviar».</p>
+    </section>
+  </div>
+
+  <details>
+    <summary>Registro</summary>
+    <div id="log"></div>
+  </details>
+</main>
+
+<script src="badge-canvas.js"></script>
+<script src="badge-control.js"></script>
+<script>
+(() => {
+  const { WIDTH, HEIGHT, BYTES, PATH, BadgeLink, imageDataToRgb565, rgb565ToImageData } = BadgeCanvas;
+  const $ = (id) => document.getElementById(id);
+  const preview = $('preview');
+  const ctx = preview.getContext('2d', { willReadFrequently: true });
+  let source = null;
+  // Framing: zoom is panel pixels per image pixel (1 = real size); (cx, cy) is the image pixel shown at
+  // the center of the panel. Only the 428x142 panel is uploaded: the crop, plus background where the
+  // image does not reach.
+  const view = { zoom: 1, cx: 0, cy: 0 };
+  let pixels = null;
+  let link = null;
+  let abort = null;
+  // Bridge for control-ui.js: the current link, the shared log and the connect / disconnect events.
+  const app = (window.badgeApp = { link: null, log: null, say: null, reconnect: null });
+
+  const log = (text) => {
+    $('log').textContent += new Date().toLocaleTimeString() + '  ' + text + '\n';
+    $('log').scrollTop = $('log').scrollHeight;
+  };
+  const say = (text, kind = '') => { $('msg').textContent = text; $('msg').className = 'msg ' + kind; };
+  app.log = log;
+  app.say = say;
+
+  if (!('serial' in navigator)) {
+    $('unsupported').style.display = 'block';
+    $('connect').disabled = true;
+  } else if (/Firefox\//.test(navigator.userAgent)) {
+    $('unsupported').textContent = 'Firefox: si el badge no aparece al conectar, Firefox está instalado como snap ' +
+      '(Ubuntu), que no tiene acceso a puertos serie. El Firefox de Mozilla (.deb o descarga oficial) sí funciona.';
+    $('unsupported').style.display = 'block';
+  }
+
+  const scaleOf = () => view.zoom;
+  const presets = () => ({
+    real: 1,
+    cover: Math.max(WIDTH / source.width, HEIGHT / source.height),
+    contain: Math.min(WIDTH / source.width, HEIGHT / source.height),
+  });
+  // From the whole image in the panel (or real size, if smaller) up to 8x real size.
+  const zoomRange = () => {
+    const p = presets();
+    return { min: Math.min(1, p.contain), max: Math.max(8, p.cover) };
+  };
+
+  // The image moves freely on both axes; the only limit is that the center of the panel always shows
+  // part of it. Uncovered areas take the background color.
+  function clampView() {
+    const onePixel = 1 / scaleOf(); // keep the far edge one panel pixel past the center
+    view.cx = Math.min(Math.max(view.cx, 0), source.width - onePixel);
+    view.cy = Math.min(Math.max(view.cy, 0), source.height - onePixel);
+  }
+
+  function setPreset(name) {
+    view.zoom = presets()[name];
+    view.cx = source.width / 2;
+    view.cy = source.height / 2;
+  }
+
+  function render() {
+    ctx.fillStyle = $('bg').value;
+    ctx.fillRect(0, 0, WIDTH, HEIGHT);
+    if (source) {
+      clampView();
+      const s = scaleOf();
+      ctx.imageSmoothingQuality = 'high';
+      ctx.drawImage(source, WIDTH / 2 - view.cx * s, HEIGHT / 2 - view.cy * s, source.width * s, source.height * s);
+    } else {
+      drawPlaceholder();
+    }
+    pixels = imageDataToRgb565(ctx.getImageData(0, 0, WIDTH, HEIGHT), $('dither').checked);
+    ctx.putImageData(rgb565ToImageData(pixels), 0, 0);
+    if (source) {
+      // Logarithmic slider: image zooms span roughly 5% to 800%.
+      const r = zoomRange();
+      $('zoom').min = Math.log2(r.min);
+      $('zoom').max = Math.log2(r.max);
+      $('zoom').value = Math.log2(view.zoom);
+      $('zoomOut').textContent = (view.zoom < 0.1 ? (view.zoom * 100).toFixed(1) : Math.round(view.zoom * 100)) + '%';
+      const p = presets();
+      document.querySelectorAll('.seg button').forEach((b) =>
+        b.classList.toggle('active', Math.abs(view.zoom / p[b.dataset.preset] - 1) < 0.005));
+    }
+    updateButtons();
+  }
+
+  let frameRequested = false;
+  function scheduleRender() {
+    if (frameRequested) return;
+    frameRequested = true;
+    requestAnimationFrame(() => { frameRequested = false; render(); });
+  }
+
+  // Zoom keeping the source point under panel position (px, py) fixed.
+  function zoomTo(zoom, px = WIDTH / 2, py = HEIGHT / 2) {
+    const before = scaleOf();
+    const ix = view.cx + (px - WIDTH / 2) / before;
+    const iy = view.cy + (py - HEIGHT / 2) / before;
+    const r = zoomRange();
+    view.zoom = Math.min(r.max, Math.max(r.min, zoom));
+    const after = scaleOf();
+    view.cx = ix - (px - WIDTH / 2) / after;
+    view.cy = iy - (py - HEIGHT / 2) / after;
+    scheduleRender();
+  }
+
+  const canMove = () => !!source && !abort;
+  const toPanel = (e) => {
+    const r = preview.getBoundingClientRect();
+    return { x: ((e.clientX - r.left) * WIDTH) / r.width, y: ((e.clientY - r.top) * HEIGHT) / r.height, k: WIDTH / r.width };
+  };
+  let drag = null;
+  preview.addEventListener('pointerdown', (e) => {
+    if (!canMove() || e.button !== 0) return;
+    drag = { x: e.clientX, y: e.clientY, cx: view.cx, cy: view.cy };
+    preview.setPointerCapture(e.pointerId);
+    preview.classList.add('dragging');
+  });
+  preview.addEventListener('pointermove', (e) => {
+    if (!drag) return;
+    const { k } = toPanel(e);
+    const s = scaleOf();
+    view.cx = drag.cx - ((e.clientX - drag.x) * k) / s;
+    view.cy = drag.cy - ((e.clientY - drag.y) * k) / s;
+    scheduleRender();
+  });
+  const endDrag = () => { drag = null; preview.classList.remove('dragging'); };
+  preview.addEventListener('pointerup', endDrag);
+  preview.addEventListener('pointercancel', endDrag);
+  preview.addEventListener('wheel', (e) => {
+    if (!canMove()) return;
+    e.preventDefault();
+    const p = toPanel(e);
+    zoomTo(view.zoom * Math.exp(-e.deltaY * 0.0015), p.x, p.y);
+  }, { passive: false });
+  preview.addEventListener('keydown', (e) => {
+    if (!canMove()) return;
+    const step = (e.shiftKey ? 20 : 2) / scaleOf();
+    const moves = { ArrowLeft: [-step, 0], ArrowRight: [step, 0], ArrowUp: [0, -step], ArrowDown: [0, step] };
+    if (moves[e.key]) {
+      view.cx += moves[e.key][0];
+      view.cy += moves[e.key][1];
+      scheduleRender();
+    } else if (e.key === '+' || e.key === '=') zoomTo(view.zoom * 1.1);
+    else if (e.key === '-') zoomTo(view.zoom / 1.1);
+    else if (e.key === '0') { setPreset('real'); scheduleRender(); }
+    else return;
+    e.preventDefault();
+  });
+  $('zoom').addEventListener('input', (e) => zoomTo(2 ** parseFloat(e.target.value)));
+  document.querySelectorAll('.seg button').forEach((b) => b.addEventListener('click', () => {
+    setPreset(b.dataset.preset);
+    render();
+  }));
+  // Files can also be dropped straight onto the preview.
+  preview.addEventListener('dragover', (e) => e.preventDefault());
+  preview.addEventListener('drop', (e) => { e.preventDefault(); loadFile(e.dataTransfer.files[0]); });
+
+  function drawPlaceholder() {
+    const g = ctx.createLinearGradient(0, 0, WIDTH, HEIGHT);
+    g.addColorStop(0, '#17334b');
+    g.addColorStop(1, '#2a6f97');
+    ctx.fillStyle = g;
+    ctx.fillRect(0, 0, WIDTH, HEIGHT);
+    ctx.fillStyle = '#f7df1e';
+    ctx.font = 'bold 34px system-ui, sans-serif';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText('JSConf MX 2026', WIDTH / 2, HEIGHT / 2 - 12);
+    ctx.fillStyle = '#eef3f7';
+    ctx.font = '16px system-ui, sans-serif';
+    ctx.fillText('Elige una imagen para tu badge', WIDTH / 2, HEIGHT / 2 + 24);
+  }
+
+  function loadFile(file) {
+    if (!file || !file.type.startsWith('image/')) return;
+    const img = new Image();
+    img.onload = () => {
+      source = img;
+      URL.revokeObjectURL(img.src);
+      setPreset('real');
+      log('Imagen: ' + file.name + ' (' + img.width + '×' + img.height + ')');
+      render();
+    };
+    img.onerror = () => say('No se pudo leer esa imagen.', 'err');
+    img.src = URL.createObjectURL(file);
+  }
+
+  $('drop').addEventListener('click', () => $('file').click());
+  $('drop').addEventListener('keydown', (e) => { if (e.key === 'Enter' || e.key === ' ') $('file').click(); });
+  $('file').addEventListener('change', (e) => loadFile(e.target.files[0]));
+  ['dragenter', 'dragover'].forEach((t) => $('drop').addEventListener(t, (e) => { e.preventDefault(); $('drop').classList.add('over'); }));
+  ['dragleave', 'drop'].forEach((t) => $('drop').addEventListener(t, () => $('drop').classList.remove('over')));
+  $('drop').addEventListener('drop', (e) => { e.preventDefault(); loadFile(e.dataTransfer.files[0]); });
+  document.addEventListener('paste', (e) => {
+    const item = [...e.clipboardData.items].find((i) => i.type.startsWith('image/'));
+    if (item) loadFile(item.getAsFile());
+  });
+  $('bg').addEventListener('input', render);
+  $('dither').addEventListener('change', render);
+
+  function updateButtons() {
+    $('upload').disabled = !link || !pixels || !!abort;
+    // The framing is locked while an upload is sending the current pixels.
+    $('zoom').disabled = !canMove();
+    document.querySelectorAll('.seg button').forEach((b) => { b.disabled = !canMove(); });
+    preview.classList.toggle('movable', canMove());
+  }
+
+  function showBadge(info) {
+    $('node').textContent = '!' + (info.node >>> 0).toString(16).padStart(8, '0');
+    const size = info.files[PATH];
+    $('current').textContent = size === BYTES ? 'imagen cargada' : size === undefined ? 'vacío' : 'incompleto (' + size + ' B)';
+  }
+
+  let connecting = false;
+
+  function showDisconnected() {
+    app.link = null;
+    document.dispatchEvent(new Event('badge-disconnect'));
+    $('status').textContent = 'Sin conectar'; $('status').className = 'pill';
+    $('connect').textContent = 'Conectar por USB';
+    $('node').textContent = $('current').textContent = '—';
+    updateButtons();
+  }
+
+  // Take over a link whose handshake succeeded: from here on the whole page uses it.
+  function adopt(attempt, info) {
+    link = attempt;
+    link.onDisconnect = (reason) => {
+      if (link !== attempt) return;
+      link = null; // an upload in progress fails on its own with the same message
+      showDisconnected();
+      log('Conexión perdida: ' + reason);
+      if (app.expectReboot) {
+        // The Control tab asked for a reboot (rename, restart): the port comes back by itself.
+        app.expectReboot = false;
+        reconnect();
+      } else {
+        say('Se perdió la conexión con el badge (¿se reinició o se desconectó?). Vuelve a conectar.', 'err');
+      }
+    };
+    app.link = link;
+    showBadge(info);
+    log('Conectado a !' + (info.node >>> 0).toString(16) + ', reinicios: ' + info.rebootCount);
+    $('status').textContent = 'Conectado'; $('status').className = 'pill on';
+    $('connect').textContent = 'Desconectar';
+    document.dispatchEvent(new Event('badge-connect'));
+  }
+
+  // After a reboot the badge enumerates again: reopen the first port this page already has permission for.
+  async function reconnect() {
+    const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+    say('El badge se está reiniciando… reconectando.');
+    $('connect').disabled = true;
+    try {
+      for (let i = 0; i < 12; i++) {
+        await sleep(2000);
+        let attempt = null;
+        try {
+          const ports = (await navigator.serial.getPorts()).filter((p) => p.getInfo().usbVendorId === 0x303a);
+          if (!ports.length) continue;
+          attempt = new BadgeLink(ports[0]);
+          await attempt.open();
+          const info = await attempt.handshake(6000);
+          adopt(attempt, info);
+          say('Badge reconectado.', 'ok');
+          return true;
+        } catch (_) {
+          if (attempt) await attempt.close({ notify: false }).catch(() => {});
+        }
+      }
+      say('No se pudo reconectar. Pulsa «Conectar por USB».', 'err');
+      return false;
+    } finally {
+      $('connect').disabled = false;
+    }
+  }
+  app.reconnect = reconnect;
+
+  $('connect').addEventListener('click', async () => {
+    if (connecting) return;
+    if (link) {
+      const old = link;
+      link = null;
+      await old.close();
+      showDisconnected();
+      say('');
+      return;
+    }
+    // One attempt at a time: a second click while connecting would open the same port again.
+    connecting = true;
+    $('connect').disabled = true;
+    $('connect').textContent = 'Conectando…';
+    let attempt = null;
+    try {
+      say('Conectando…');
+      attempt = await BadgeLink.request();
+      const info = await attempt.handshake();
+      adopt(attempt, info);
+      say('');
+    } catch (err) {
+      if (attempt) await attempt.close().catch(() => {});
+      let text = err.message;
+      if (err.name === 'NotFoundError') {
+        text = 'No se eligió ningún puerto. Si el badge no aparecía en la lista: puede estar abierto en otra ventana ' +
+          'o pestaña de esta página (Firefox oculta los puertos ocupados), el cable USB puede no ser de datos o, en ' +
+          'Linux, el navegador es un snap (Firefox y Chromium de Ubuntu no pueden ver puertos serie).';
+      } else if (attempt && /device has been lost/i.test(attempt.lostReason || '') && /Linux/.test(navigator.userAgent)) {
+        // Chromium on Linux: a tty left at min=0 by esptool/PlatformIO/pyserial reads 0 bytes when idle,
+        // which Chromium reports as a lost device. Nothing was unplugged.
+        text = 'El puerto quedó configurado por otro programa (esptool, PlatformIO, monitor serie) y Chromium lo ' +
+          'interpreta como desconectado. Ejecuta en una terminal: stty -F /dev/ttyACM0 min 1 (y /dev/ttyACM1), ' +
+          'o abre la página con abrir-chromium.sh, que lo hace solo, o reconecta el cable.';
+      }
+      showDisconnected();
+      say(text, 'err');
+      log('Error (' + err.name + '): ' + (err.cause ? err.cause.message : err.message) +
+        (attempt && attempt.lostReason ? ' | motivo: ' + attempt.lostReason : '') +
+        (attempt && attempt.skippedFrames ? ' | tramas ilegibles: ' + attempt.skippedFrames + ' (' + attempt.lastFrameError + ')' : ''));
+    } finally {
+      connecting = false;
+      $('connect').disabled = false;
+      if (!link) $('connect').textContent = 'Conectar por USB';
+    }
+    updateButtons();
+  });
+
+  $('upload').addEventListener('click', async () => {
+    abort = new AbortController();
+    updateButtons();
+    $('cancel').hidden = false;
+    const t0 = performance.now();
+    say('Subiendo…');
+    log('Subida iniciada: ' + BYTES + ' bytes a ' + PATH);
+    try {
+      const info = await link.uploadCanvas(pixels, {
+        signal: abort.signal,
+        onProgress(sent, total) {
+          const secs = (performance.now() - t0) / 1000;
+          const rate = sent / 1024 / Math.max(secs, 0.001);
+          $('progress').style.width = (100 * sent / total).toFixed(1) + '%';
+          $('pct').textContent = Math.floor(100 * sent / total) + '%';
+          $('rate').textContent = rate.toFixed(1) + ' KB/s · faltan ' + Math.ceil((total - sent) / 1024 / Math.max(rate, 0.01)) + ' s';
+        },
+      });
+      const secs = ((performance.now() - t0) / 1000).toFixed(1);
+      showBadge(info);
+      say('Imagen guardada y verificada en ' + secs + ' s.', 'ok');
+      log('Subida verificada en ' + secs + ' s');
+    } catch (err) {
+      say(err.name === 'AbortError' ? 'Subida cancelada.' : err.message, 'err');
+      log('Error: ' + err.message);
+    } finally {
+      abort = null;
+      $('cancel').hidden = true;
+      updateButtons();
+    }
+  });
+
+  $('cancel').addEventListener('click', () => abort && abort.abort());
+  // Closing or reloading the page: tell the badge we are gone so it stops writing to us.
+  window.addEventListener('pagehide', () => { if (link) link.close(); });
+
+  render();
+})();
+
+// Tabs: Imagen / Control / Inspector.
+(() => {
+  const tabs = [...document.querySelectorAll('.tabs [role=tab]')];
+  function select(tab) {
+    tabs.forEach((t) => {
+      const on = t === tab;
+      t.setAttribute('aria-selected', on);
+      t.tabIndex = on ? 0 : -1;
+      document.getElementById(t.getAttribute('aria-controls')).hidden = !on;
+    });
+    try { localStorage.setItem('badge-studio-tab', tab.id); } catch (_) {}
+  }
+  tabs.forEach((t, i) => {
+    t.addEventListener('click', () => select(t));
+    t.addEventListener('keydown', (e) => {
+      const d = { ArrowRight: 1, ArrowLeft: -1 }[e.key];
+      if (!d) return;
+      const next = tabs[(i + d + tabs.length) % tabs.length];
+      next.focus();
+      select(next);
+    });
+  });
+  let saved = null;
+  try { saved = localStorage.getItem('badge-studio-tab'); } catch (_) {}
+  select(tabs.find((t) => t.id === saved) || tabs[0]);
+})();
+</script>
+<script src="control-ui.js"></script>
+</body>
+</html>

@@ -9,6 +9,7 @@ Este repositorio tiene dos partes independientes:
 | Carpeta | Qué es |
 | --- | --- |
 | [`presentacion/`](presentacion) | La presentación (HTML, CSS y JavaScript, sin compilar). |
+| [`badge-studio/`](badge-studio) | Badge Studio: página para subir imágenes, controlar el badge e inspeccionar tramas por USB. |
 | [`badge-web-control/`](badge-web-control) | Skill de Claude Code para crear páginas web que controlan el badge. |
 
 El deck está separado en HTML, CSS y JavaScript para poder editarlo a mano sin
@@ -134,6 +135,14 @@ así que no hace falta conexión a internet.
 │       └── schanim/
 │           ├── badge_jsc2026.player.html   # Reproductor autocontenido del esquemático
 │           └── schanim-host.js             # Puente postMessage entre deck y reproductor
+├── badge-studio/                       # Badge Studio (Chrome o Edge, Web Serial)
+│   ├── index.html                      # Pestañas Imagen, Control e Inspector
+│   ├── control-ui.js                   # Lógica de las pestañas Control e Inspector
+│   ├── badge-canvas.js                 # Puerto serie, tramas, protobuf y subida de imagen
+│   ├── badge-control.js                # Texto, botones, nombre, reinicio y captura
+│   ├── PROTOCOLO.md                    # Paquetes byte a byte
+│   ├── abrir-chromium.sh               # Abre Chromium con permisos de puerto serie (Linux)
+│   └── README.md                       # Uso detallado
 ├── badge-web-control/                  # Skill para crear páginas de control del badge
 │   ├── SKILL.md                        # Instrucciones del skill
 │   ├── assets/                         # badge-canvas.js, badge-control.js y template.html
@@ -154,6 +163,16 @@ teclas, los botones y los gestos funcionen igual dentro y fuera del iframe.
 - **Esquemático:** el reproductor se regenera por separado y se coloca en
   `presentacion/assets/schanim/badge_jsc2026.player.html`; no requiere cambios en el deck
   mientras conserve el mismo nombre e id (`sa-badge`).
+
+## Badge Studio
+
+`badge-studio/index.html` se abre con doble clic en Chrome o Edge de escritorio, con el
+badge conectado por un cable USB-C de datos. La pestaña **Imagen** sube una imagen de
+428 × 142, **Control** manda texto, pulsa los botones, captura la pantalla del badge,
+cambia el nombre y lo reinicia, e **Inspector** muestra las tramas que viajan por el
+cable. La captura de pantalla necesita el firmware del taller
+([`jscon-2026-firmware`](https://github.com/ElectronicCats/jscon-2026-firmware)). Más
+detalles en [`badge-studio/README.md`](badge-studio/README.md).
 
 ## Skill para el taller
 
