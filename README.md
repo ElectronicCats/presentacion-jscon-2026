@@ -4,6 +4,13 @@ Presentación de **Electronic Cats** para JSCONF 2026. Explica cómo se pasa de 
 enlace LoRa al funcionamiento de una red Meshtastic, y cómo el badge JSCONF 2026
 se integra como un nodo más de la malla.
 
+Este repositorio tiene dos partes independientes:
+
+| Carpeta | Qué es |
+| --- | --- |
+| [`presentacion/`](presentacion) | La presentación (HTML, CSS y JavaScript, sin compilar). |
+| [`badge-web-control/`](badge-web-control) | Skill de Claude Code para crear páginas web que controlan el badge. |
+
 El deck está separado en HTML, CSS y JavaScript para poder editarlo a mano sin
 tocar los otros archivos. No tiene dependencias externas ni paso de compilación.
 Incluye un esquemático animado del badge que se recorre con las mismas teclas de
@@ -64,17 +71,15 @@ la presentación.
 
 ## Ver la presentación
 
-Abre `index.html` en el navegador. También puedes servirla en local para evitar
-restricciones de `file://` con el iframe del esquemático:
+Abre `presentacion/index.html` en el navegador. También puedes servirla en local
+para evitar restricciones de `file://` con el iframe del esquemático:
 
 ```bash
+cd presentacion
 python3 -m http.server 8000
 ```
 
 y visita <http://localhost:8000>.
-
-Si el repositorio se publica con GitHub Pages, la raíz sirve `index.html`
-directamente.
 
 ## Navegación
 
@@ -100,35 +105,39 @@ El deck toma como referencia la plantilla de presentaciones de Electronic Cats:
 - **Tipografía:** Oswald para títulos y Roboto para cuerpo y listas.
 - **Colores:** verde `#00BA84`, verde profundo `#044D2C`, azul petróleo
   `#1A5157`, blanco y acentos dorados `#C98A00`.
-- **Fondos:** `assets/theme/cover-bg.png` para la apertura,
-  `assets/theme/content-bg.png` para contenido y `assets/theme/title-bg.png`
+- **Fondos:** `presentacion/assets/theme/cover-bg.png` para la apertura,
+  `presentacion/assets/theme/content-bg.png` para contenido y `presentacion/assets/theme/title-bg.png`
   para la portada.
-- **Logo:** `assets/theme/ec-logo-horizontal.png` para contenido y
-  `assets/theme/ec-logo-horizontal-white.png` para la portada. Va separado del
+- **Logo:** `presentacion/assets/theme/ec-logo-horizontal.png` para contenido y
+  `presentacion/assets/theme/ec-logo-horizontal-white.png` para la portada. Va separado del
   fondo y con margen de seguridad para que no se corte al proyectar.
 
-La paleta y las fuentes están centralizadas al inicio de `styles.css`, en `:root`
-y en los `@font-face`. Las fuentes se sirven localmente desde `assets/fonts/`,
+La paleta y las fuentes están centralizadas al inicio de `presentacion/styles.css`, en `:root`
+y en los `@font-face`. Las fuentes se sirven localmente desde `presentacion/assets/fonts/`,
 así que no hace falta conexión a internet.
 
 ## Estructura
 
 ```text
 .
-├── index.html                          # Estructura y contenido de las 41 diapositivas
-├── styles.css                          # Colores, tipografía, layout y animaciones
-├── app.js                              # Navegación, dots, fullscreen y SchAnim
-├── assets/
-│   ├── badge/                          # Fotos del badge sin fondo (WebP)
-│   ├── people/                         # Fotos de presentadores
-│   ├── phone/                          # Capturas de la app Meshtastic (WebP)
-│   ├── studio/                         # Captura de Badge Studio
-│   ├── fonts/                          # Oswald + Roboto (WOFF2, local)
-│   ├── theme/                          # Fondos y logo de Electronic Cats
-│   └── schanim/
-│       ├── badge_jsc2026.player.html   # Reproductor autocontenido del esquemático
-│       └── schanim-host.js             # Puente postMessage entre deck y reproductor
-├── .claude/skills/badge-web-control/   # Skill para crear páginas de control del badge
+├── presentacion/                       # La presentación
+│   ├── index.html                      # Estructura y contenido de las 41 diapositivas
+│   ├── styles.css                      # Colores, tipografía, layout y animaciones
+│   ├── app.js                          # Navegación, dots, fullscreen y SchAnim
+│   └── assets/
+│       ├── badge/                      # Fotos del badge sin fondo y capturas de sus pantallas
+│       ├── people/                     # Fotos de presentadores
+│       ├── phone/                      # Capturas de la app Meshtastic (WebP)
+│       ├── studio/                     # Captura de Badge Studio
+│       ├── fonts/                      # Oswald + Roboto (WOFF2, local)
+│       ├── theme/                      # Fondos y logo de Electronic Cats
+│       └── schanim/
+│           ├── badge_jsc2026.player.html   # Reproductor autocontenido del esquemático
+│           └── schanim-host.js             # Puente postMessage entre deck y reproductor
+├── badge-web-control/                  # Skill para crear páginas de control del badge
+│   ├── SKILL.md                        # Instrucciones del skill
+│   ├── assets/                         # badge-canvas.js, badge-control.js y template.html
+│   └── references/protocolo.md         # Paquetes byte a byte
 └── README.md
 ```
 
@@ -136,23 +145,24 @@ El reproductor del esquemático es un export independiente que se comunica con
 el deck mediante `postMessage` a través de `SchAnimHost`. Esto permite que las
 teclas, los botones y los gestos funcionen igual dentro y fuera del iframe.
 
-## Editar
+## Editar la presentación
 
-- **Contenido y orden de las diapositivas:** `index.html`. Cada `<section class="slide">`
+- **Contenido y orden de las diapositivas:** `presentacion/index.html`. Cada `<section class="slide">`
   tiene un comentario `<!-- Diapositiva NN -->` para ubicarla rápido.
-- **Colores, tipografía, espaciado y animaciones:** `styles.css`.
-- **Navegación, dots, fullscreen y control del esquemático:** `app.js`.
+- **Colores, tipografía, espaciado y animaciones:** `presentacion/styles.css`.
+- **Navegación, dots, fullscreen y control del esquemático:** `presentacion/app.js`.
 - **Esquemático:** el reproductor se regenera por separado y se coloca en
-  `assets/schanim/badge_jsc2026.player.html`; no requiere cambios en el deck
+  `presentacion/assets/schanim/badge_jsc2026.player.html`; no requiere cambios en el deck
   mientras conserve el mismo nombre e id (`sa-badge`).
 
 ## Skill para el taller
 
-`.claude/skills/badge-web-control/` es un skill de Claude Code que escribe una página
-web (HTML + JavaScript, Web Serial) para controlar el badge por USB: mostrar texto,
+`badge-web-control/` es un skill de Claude Code que escribe una página web
+(HTML + JavaScript, Web Serial) para controlar el badge por USB: mostrar texto,
 pulsar botones, cambiar el nombre, leer el estado, capturar la pantalla y subir una
-imagen. Para usarlo, copia la carpeta a `.claude/skills/` de tu proyecto y pide la
-idea a tu agente. Incluye las librerías, una plantilla y la guía del protocolo.
+imagen. Para usarlo, copia la carpeta `badge-web-control/` a `.claude/skills/` de tu
+proyecto y pide la idea a tu agente. Incluye las librerías, una plantilla y la guía
+del protocolo.
 
 ## Créditos
 
