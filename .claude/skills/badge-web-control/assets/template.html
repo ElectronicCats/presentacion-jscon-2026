@@ -1,0 +1,105 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Mi página para el badge</title>
+<style>
+  :root { --bg: #0e2232; --card: #17334b; --line: #2a4d69; --text: #eef3f7; --muted: #9db3c6; --accent: #f7df1e; --ok: #5fd39a; --err: #ff7a7a;
+          font-family: system-ui, sans-serif; color-scheme: dark; }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--text); }
+  main { max-width: 720px; margin: 0 auto; padding: 24px 16px 48px; display: grid; gap: 16px; }
+  h1 { font-size: 20px; margin: 0; }
+  section { background: var(--card); border: 1px solid var(--line); border-radius: 12px; padding: 16px; }
+  h2 { margin: 0 0 12px; font-size: 12px; letter-spacing: 1.2px; text-transform: uppercase; color: var(--muted); }
+  button, input { font: inherit; border-radius: 8px; border: 1px solid var(--line); padding: 10px 14px; }
+  button { background: var(--bg); color: var(--text); cursor: pointer; font-weight: 600; }
+  button.primary { background: var(--accent); color: #111; border-color: var(--accent); }
+  button:disabled { opacity: .45; cursor: not-allowed; }
+  input { background: var(--bg); color: var(--text); width: 100%; }
+  .row { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 10px; }
+  .row > * { flex: 1 1 120px; }
+  #status { color: var(--muted); font-size: 14px; }
+  #status.ok { color: var(--ok); } #status.err { color: var(--err); }
+  pre { margin: 0; white-space: pre-wrap; font-size: 13px; color: var(--muted); }
+</style>
+</head>
+<body>
+<main>
+  <h1>Mi página para el badge</h1>
+
+  <section>
+    <h2>Conexión</h2>
+    <div class="row">
+      <button id="connect" class="primary">Conectar por USB</button>
+      <span id="status">Sin conectar</span>
+    </div>
+    <pre id="info"></pre>
+  </section>
+
+  <section>
+    <h2>Mensaje</h2>
+    <input id="text" type="text" maxlength="120" placeholder="Escribe algo para tu badge">
+    <div class="row"><button id="send" disabled>Mostrar en el badge</button></div>
+  </section>
+
+  <section>
+    <h2>Botones</h2>
+    <div class="row">
+      <button data-press="UP" disabled>Arriba</button>
+      <button data-press="DOWN" disabled>Abajo</button>
+      <button data-press="SELECT" disabled>Select</button>
+      <button data-press="BACK" disabled>Back</button>
+    </div>
+  </section>
+
+  <!-- AQUÍ VA TU IDEA: un botón que mande un saludo por hora, un panel que cambie de página solo, etc. -->
+</main>
+
+<script src="badge-canvas.js"></script>
+<script src="badge-control.js"></script>
+<script>
+  const $ = (id) => document.getElementById(id);
+  let link = null;
+  let device = null;
+
+  const status = (text, kind = '') => { $('status').textContent = text; $('status').className = kind; };
+  const enable = (on) => document.querySelectorAll('#send, [data-press]').forEach((b) => { b.disabled = !on; });
+
+  $('connect').addEventListener('click', async () => {
+    if (link) {                                   // desconectar
+      await link.close();
+      link = device = null;
+      enable(false);
+      $('connect').textContent = 'Conectar por USB';
+      return status('Sin conectar');
+    }
+    try {
+      status('Conectando…');
+      link = await BadgeCanvas.BadgeLink.request();                      // abre el diálogo de puertos (VID 0x303a)
+      link.onDisconnect = () => { link = device = null; enable(false); $('connect').textContent = 'Conectar por USB'; status('Se perdió la conexión', 'err'); };
+      device = new BadgeControl.Device(link);
+      const s = await device.readState();                                // handshake + estado
+      $('info').textContent = (s.user ? s.user.longName + ' · ' : '') + BadgeControl.nodeId(s.node) + ' · firmware ' + s.firmware;
+      enable(true);
+      $('connect').textContent = 'Desconectar';
+      status('Conectado', 'ok');
+    } catch (err) {
+      if (link) await link.close({ notify: false }).catch(() => {});
+      link = device = null;
+      status(err.message, 'err');
+    }
+  });
+
+  $('send').addEventListener('click', () => {
+    const text = $('text').value.trim();
+    if (text) device.sendText(text);                                     // aviso en la pantalla del propio badge
+  });
+
+  document.querySelectorAll('[data-press]').forEach((b) => b.addEventListener('click', () => device.press(b.dataset.press)));
+
+  window.addEventListener('pagehide', () => { if (link) link.close(); });
+</script>
+</body>
+</html>
