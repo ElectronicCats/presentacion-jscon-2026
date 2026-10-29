@@ -1,5 +1,5 @@
 /**
- * badge-canvas.js — upload a full-screen image to the Badge JSCON 2026 over Web Serial.
+ * badge-link.js — upload a full-screen image to the Badge JSCON 2026 over Web Serial.
  *
  * Classic script (no modules) so the page also works when opened from file://.
  * Exposes window.BadgeCanvas = { WIDTH, HEIGHT, BYTES, PATH, BadgeLink, imageDataToRgb565, crc16 }.

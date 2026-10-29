@@ -15,7 +15,7 @@ No necesitas firmware nuevo, ni servidor, ni instalar nada: es Chrome o Edge de 
 
 | Ruta | Para qué |
 |---|---|
-| `assets/badge-canvas.js` | Enlace serie, tramas `0x94 0xC3`, protobuf y subida de imagen (XModem). |
+| `assets/badge-link.js` | Enlace serie, tramas `0x94 0xC3`, protobuf y subida de imagen (XModem). |
 | `assets/badge-control.js` | `BadgeControl.Device`: texto, botones, nombre, reinicio, estado. |
 | `assets/template.html` | Página mínima que ya conecta y controla. **Empieza siempre desde aquí.** |
 | `references/protocolo.md` | Cómo se construyen los paquetes, byte a byte. Léelo si tienes que salirte del API. |
@@ -26,7 +26,7 @@ La página completa de referencia es Badge Studio (`tools/canvas-web/index.html`
 
 1. **Pregunta lo mínimo** si falta: qué debe hacer la página y quién la usa. No preguntes lo que ya sabes:
    badge JSCONF 2026, Chrome/Edge, USB.
-2. **Crea una carpeta** para el proyecto y copia en ella `assets/badge-canvas.js`, `assets/badge-control.js` y
+2. **Crea una carpeta** para el proyecto y copia en ella `assets/badge-link.js`, `assets/badge-control.js` y
    `assets/template.html` (renómbralo a `index.html`). Las tres piezas van juntas en la misma carpeta.
 3. **Escribe la lógica** en el `<script>` de `index.html` usando solo el API de la sección siguiente.
    No reimplementes protobuf ni el puerto serie.

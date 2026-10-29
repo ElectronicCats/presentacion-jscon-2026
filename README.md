@@ -138,14 +138,14 @@ así que no hace falta conexión a internet.
 ├── badge-studio/                       # Badge Studio (Chrome o Edge, Web Serial)
 │   ├── index.html                      # Pestañas Imagen, Control e Inspector
 │   ├── control-ui.js                   # Lógica de las pestañas Control e Inspector
-│   ├── badge-canvas.js                 # Puerto serie, tramas, protobuf y subida de imagen
+│   ├── badge-link.js                 # Puerto serie, tramas, protobuf y subida de imagen
 │   ├── badge-control.js                # Texto, botones, nombre, reinicio y captura
 │   ├── PROTOCOLO.md                    # Paquetes byte a byte
 │   ├── abrir-chromium.sh               # Abre Chromium con permisos de puerto serie (Linux)
 │   └── README.md                       # Uso detallado
 ├── badge-web-control/                  # Skill para crear páginas de control del badge
 │   ├── SKILL.md                        # Instrucciones del skill
-│   ├── assets/                         # badge-canvas.js, badge-control.js y template.html
+│   ├── assets/                         # badge-link.js, badge-control.js y template.html
 │   └── references/protocolo.md         # Paquetes byte a byte
 └── README.md
 ```

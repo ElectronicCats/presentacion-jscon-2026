@@ -11,7 +11,7 @@ Cómo lo hace JavaScript (puerto serie, protobuf, paquetes): **[PROTOCOLO.md](PR
 | Archivo | Qué es |
 |---|---|
 | `index.html` | App web (Web Serial). Abrir en Chrome o Edge de escritorio. |
-| `badge-canvas.js` | Librería del protocolo (enlace serie, tramas, protobuf, XModem), sin dependencias. Expone `window.BadgeCanvas`. |
+| `badge-link.js` | Librería del protocolo (enlace serie, tramas, protobuf, XModem), sin dependencias. Expone `window.BadgeCanvas`. |
 | `badge-control.js` | Paquetes de control y lectura de estado. Expone `window.BadgeControl`. |
 | `control-ui.js` | Pestañas Control e Inspector. |
 | `PROTOCOLO.md` | Guía del protocolo con el código que lo implementa. |
@@ -125,7 +125,7 @@ Reglas:
 ## API JavaScript
 
 ```html
-<script src="badge-canvas.js"></script>
+<script src="badge-link.js"></script>
 <script>
   const { BadgeLink, imageDataToRgb565, WIDTH, HEIGHT } = BadgeCanvas;
 
@@ -160,7 +160,7 @@ Constantes: `WIDTH` 428, `HEIGHT` 142, `BYTES` 121552, `PATH` `/prefs/canvas.bin
 ## API de control (`badge-control.js`)
 
 ```html
-<script src="badge-canvas.js"></script>
+<script src="badge-link.js"></script>
 <script src="badge-control.js"></script>
 <script>
   const link = await BadgeCanvas.BadgeLink.request();        // requiere un clic del usuario

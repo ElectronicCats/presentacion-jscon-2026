@@ -1,7 +1,7 @@
 /**
  * badge-control.js — control the Badge JSCONF 2026 from the browser over Web Serial.
  *
- * Builds on badge-canvas.js (load it first): it reuses its serial link, its 0x94 0xC3 framing and its
+ * Builds on badge-link.js (load it first): it reuses its serial link, its 0x94 0xC3 framing and its
  * protobuf helpers. Everything here is the standard Meshtastic phone API; no custom messages exist.
  *
  *   ToRadio { packet: MeshPacket { to, decoded: Data { portnum, payload } } }

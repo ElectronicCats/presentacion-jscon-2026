@@ -9,7 +9,7 @@ nuevos. Probado el 27-oct-2026 con el firmware `2.8.0.e000e4d`.
 
 | Archivo | Qué contiene |
 |---|---|
-| `badge-canvas.js` | Enlace serie (`BadgeLink`), tramas `0x94 0xC3`, protobuf a mano, XModem (imagen). |
+| `badge-link.js` | Enlace serie (`BadgeLink`), tramas `0x94 0xC3`, protobuf a mano, XModem (imagen). |
 | `badge-control.js` | Paquetes de control (texto, botones, nombre, reinicio) y lectura del estado. |
 | `control-ui.js` | Pestañas **Control** e **Inspector**. |
 | `index.html` | La página: pestañas, conexión y subida de imagen. |
@@ -46,7 +46,7 @@ Filtramos por el fabricante: el ESP32-S3 se presenta como *USB JTAG/serial debug
 VID `0x303a` (Espressif).
 
 ```js
-// badge-canvas.js · BadgeLink.request / open
+// badge-link.js · BadgeLink.request / open
 const port = await navigator.serial.requestPort({ filters: [{ usbVendorId: 0x303a }] });
 await port.open({ baudRate: 115200 });
 this.writer = this.port.writable.getWriter();   // para enviar
@@ -73,7 +73,7 @@ de **4 bytes**:
 `LEN` va en big-endian y vale como máximo 512. Lo que quede fuera de una trama es texto de consola del
 firmware y se ignora.
 
-**Enviar** (`badge-canvas.js`, `_send`):
+**Enviar** (`badge-link.js`, `_send`):
 
 ```js
 const bytes = new Uint8Array([0x94, 0xc3, payload.length >> 8, payload.length & 0xff, ...payload]);
@@ -109,7 +109,7 @@ lista de campos; cada campo es **clave + valor**.
 **Varint**: 7 bits por byte, el bit alto indica "sigue".
 
 ```js
-// badge-canvas.js
+// badge-link.js
 function varint(n) {
   const out = [];
   do {
@@ -243,7 +243,7 @@ Los *getters* de administración (`get_config_request`, etc.) **no responden por
 como lo hace la app del celular: se pide un volcado completo con `ToRadio.want_config_id`.
 
 ```js
-// badge-canvas.js
+// badge-link.js
 const toRadioWantConfig = (nonce) => fieldVarint(3, nonce);     // ToRadio.want_config_id = 3
 // … y se espera FromRadio.config_complete_id (7) con el mismo número
 ```
@@ -318,7 +318,7 @@ async screenshot({ onProgress, settleMs = 3000 } = {}) {
 ```
 
 ```js
-// badge-canvas.js · readFile (resumen)
+// badge-link.js · readFile (resumen)
 await this._send(toRadioXModem(Control.STX, 0, crc16(name), name));   // «dame /prefs/screen.bin»
 for (;;) {
   const e = await this._next((x) => x.kind === 'xmodem', timeoutMs);

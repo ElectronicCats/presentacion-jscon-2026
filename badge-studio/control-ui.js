@@ -1,7 +1,7 @@
 /**
  * control-ui.js — the Control and Inspector tabs of Badge Studio.
  *
- * Needs badge-canvas.js and badge-control.js, and the bridge window.badgeApp that index.html publishes:
+ * Needs badge-link.js and badge-control.js, and the bridge window.badgeApp that index.html publishes:
  *   badgeApp.link    the connected BadgeLink, or null
  *   badgeApp.log()   the shared log
  *   'badge-connect' / 'badge-disconnect' events on document
@@ -167,7 +167,7 @@
   let counter = 0;
 
   /**
-   * Read a protobuf message keeping the wire type of every field (badge-canvas.js' decode() drops it).
+   * Read a protobuf message keeping the wire type of every field (badge-link.js' decode() drops it).
    * Wire types: 0 varint, 1 fixed64, 2 length-delimited, 5 fixed32.
    */
   function fields(buf) {
