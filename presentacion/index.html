@@ -137,7 +137,7 @@
   <div class="can-card"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="5" r="2.500"/><circle cx="5" cy="19" r="2.500"/><circle cx="19" cy="19" r="2.500"/><path d="M12 7.500v4M12 11.500L6 17M12 11.500l6 5.500"/></svg><h3>Meshtastic</h3><p>Red mesh de mensajería, de código abierto. Es el firmware que corre el badge.</p></div>
   <div class="can-card"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="15" r="1.600"/><path d="M8.500 11.500a5 5 0 0 1 7 0M5.500 8.500a9 9 0 0 1 13 0M2.500 5.500a13 13 0 0 1 19 0"/></svg><h3>LoRa</h3><p>El radio de largo alcance y bajo consumo con el que los nodos se hablan.</p></div>
   <div class="can-card"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 7l10 10-5 4V3l5 4L7 17"/></svg><h3>BLE (Bluetooth LE)</h3><p>Conecta tu celular con el badge para usar la app de Meshtastic.</p></div>
-  <div class="can-card"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v14M12 3l-2.500 3M12 3l2.500 3M5 12v3a2 2 0 0 0 2 2h3M19 9v4a2 2 0 0 1-2 2h-3"/><circle cx="5" cy="10" r="1.600"/><rect x="17.500" y="6.500" width="3" height="3"/><circle cx="12" cy="20" r="1.600"/></svg><h3>USB y Web Serial</h3><p>El cable por el que tu página le habla al badge. Es lo que más vamos a ver.</p></div>
+  <div class="can-card"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v14M12 3l-2.500 3M12 3l2.500 3M5 12v3a2 2 0 0 0 2 2h3M19 9v4a2 2 0 0 1-2 2h-3"/><circle cx="5" cy="10" r="1.600"/><rect x="17.500" y="6.500" width="3" height="3"/><circle cx="12" cy="20" r="1.600"/></svg><h3>USB y Web Serial</h3><p>El puerto serie USB por el que tu página le habla al badge. Es lo que más vamos a ver.</p></div>
   <div class="can-card"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M7 9h4M7 12h10M7 15h7"/></svg><h3>Protobuf</h3><p>El formato compacto de los mensajes. Lo armaremos a mano, byte a byte.</p></div>
   <div class="can-card"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 7l-5 5 5 5M16 7l5 5-5 5M14 4l-4 16"/></svg><h3>JavaScript</h3><p>Tu código en Chrome o Edge: sin servidor, sin instalar nada y sin firmware nuevo.</p></div>
 </div>
@@ -556,7 +556,7 @@
 <div class="kicker">Control con JavaScript · Web Serial</div>
 <h1>Enviar y leer tramas</h1>
 <div class="code-pair">
-<div class="code-card"><h3>Enviar · el cable no sabe dónde termina un mensaje</h3><pre><span class="k">const</span> bytes = <span class="k">new</span> <span class="f">Uint8Array</span>([
+<div class="code-card"><h3>Enviar · el puerto serie no sabe dónde termina un mensaje</h3><pre><span class="k">const</span> bytes = <span class="k">new</span> <span class="f">Uint8Array</span>([
   <span class="n">0x94</span>, <span class="n">0xc3</span>,           <span class="c">// inicio de trama</span>
   payload.length &gt;&gt; <span class="n">8</span>,    <span class="c">// largo: byte alto</span>
   payload.length &amp; <span class="n">0xff</span>,  <span class="c">// largo: byte bajo</span>
@@ -585,7 +585,7 @@ rx = rx.<span class="f">slice</span>(i + <span class="n">4</span> + len);
 <svg class="circuit bg-circuit" viewBox="0 0 1600 900" preserveAspectRatio="xMidYMid slice" aria-hidden="true"><g class="traces"><path d="M0 120 L260 120 L320 180 L520 180 M0 260 L180 260 L240 320 L240 470 L300 530 L430 530 M0 400 L120 400 L180 460 L180 640 L260 720 L560 720 M0 560 L90 560 L150 620 L150 800 L210 860 L380 860 M0 40 L420 40 L470 90 L700 90 M1600 110 L1330 110 L1270 170 L1060 170 M1600 250 L1440 250 L1380 310 L1380 430 L1320 490 L1150 490 M1600 420 L1500 420 L1440 480 L1440 650 L1370 720 L1090 720 M1600 580 L1530 580 L1480 630 L1480 790 L1420 850 L1240 850 M1600 40 L1180 40 L1130 90 L960 90 M700 900 L700 850 L760 790 M900 900 L900 860 L840 800"/></g><g class="pads"><circle cx="520" cy="180" r="9"/><circle class="via" cx="520" cy="180" r="3.500"/><circle cx="430" cy="530" r="9"/><circle class="via" cx="430" cy="530" r="3.500"/><circle cx="560" cy="720" r="9"/><circle class="via" cx="560" cy="720" r="3.500"/><circle cx="380" cy="860" r="9"/><circle class="via" cx="380" cy="860" r="3.500"/><circle cx="700" cy="90" r="9"/><circle class="via" cx="700" cy="90" r="3.500"/><circle cx="1060" cy="170" r="9"/><circle class="via" cx="1060" cy="170" r="3.500"/><circle cx="1150" cy="490" r="9"/><circle class="via" cx="1150" cy="490" r="3.500"/><circle cx="1090" cy="720" r="9"/><circle class="via" cx="1090" cy="720" r="3.500"/><circle cx="1240" cy="850" r="9"/><circle class="via" cx="1240" cy="850" r="3.500"/><circle cx="960" cy="90" r="9"/><circle class="via" cx="960" cy="90" r="3.500"/><circle cx="760" cy="790" r="9"/><circle class="via" cx="760" cy="790" r="3.500"/><circle cx="840" cy="800" r="9"/><circle class="via" cx="840" cy="800" r="3.500"/></g><g class="chips"><rect x="560" y="150" width="90" height="60" rx="4"/><path d="M575 150v-14M600 150v-14M625 150v-14M575 210v14M600 210v14M625 210v14"/><rect x="1000" y="740" width="110" height="70" rx="4"/><path d="M1020 740v-14M1055 740v-14M1090 740v-14M1020 810v14M1055 810v14M1090 810v14"/></g></svg>
 <div class="kicker">Control con JavaScript</div>
 <h1>Un paquete, byte a byte</h1>
-<p class="what-lead">Mostrar <b>«Hola»</b> en el badge: estos 21 bytes viajan por el cable USB.</p>
+<p class="what-lead">Mostrar <b>«Hola»</b> en el badge: estos 21 bytes salen por el puerto serie USB.</p>
 <div class="bytes-sec">Trama</div>
 <div class="bytes"><div class="bg soft"><span class="hx">94 c3</span><span class="cp">inicio de trama</span></div><div class="bg soft"><span class="hx">00 11</span><span class="cp">largo: 17 bytes</span></div></div>
 <div class="bytes-sec">ToRadio · MeshPacket</div>
@@ -838,7 +838,7 @@ link.onDisconnect = () =&gt; {
 <div class="ap-grid wide-fig">
 <div>
 <div class="ap-fig" style="margin:0 0 2vh"><table class="ap-table"><tr><th>Dato</th><th>Valor</th></tr><tr><td>Tamaño</td><td>428 × 142 píxeles</td></tr><tr><td>Formato</td><td>RGB565, big-endian</td></tr><tr><td>Peso</td><td>121 552 bytes</td></tr><tr><td>Archivo</td><td><code>/prefs/canvas.bin</code></td></tr><tr><td>Transporte</td><td>XModem por USB, ~8 s</td></tr></table></div>
-<p class="what-note" style="margin-top:0">La imagen <b>no viaja por LoRa</b>: solo por el cable.</p>
+<p class="what-note" style="margin-top:0">La imagen <b>no viaja por LoRa</b>: solo por USB.</p>
 </div>
 <div class="code-card"><h3>De tu dibujo al badge</h3><pre><span class="c">// 1 · dibuja o carga tu imagen en un canvas 428×142</span>
 <span class="k">const</span> ctx = canvas.<span class="f">getContext</span>(<span class="n">'2d'</span>);
